@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>房產深度決策看板 v11.0 - 專業修復版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --main-blue: #2563eb; --bg-gray: #f8fafc; }
+        body { background-color: var(--bg-gray); font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
+        .card-pro { border: none; border-radius: 1rem; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .ai-zone { background: linear-gradient(135deg, #1e40af, #7c3aed); color: white; border-radius: 1rem 1rem 0 0; padding: 1.2rem; }
+        .chart-box { height: 280px; position: relative; }
+        .rank-item { padding: 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .rank-idx { background: var(--main-blue); color: white; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; text-align: center; line-height: 22px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold m-0">🏗️ 區域房產決策面板 <span class="badge bg-primary fs-6">v11.0</span></h3>
+        <div class="d-flex gap-3 align-items-center bg-white p-2 rounded-pill shadow-sm">
+            <input type="password" id="apiKey" class="form-control form-control-sm border-0 rounded-pill" style="width: 250px;" placeholder="貼上 Gemini API Key...">
+            <input type="file" id="csvFile" style="display:none">
+            <button class="btn btn-primary btn-sm rounded-pill px-4" onclick="document.getElementById('csvFile').click()">載入實價登錄 CSV</button>
+        </div>
+    </div>
+
+    <div class="row d-none" id="dashboardUI">
+        <div class="col-xl-3 col-lg-4">
+            <div class="card-pro p-4 mb-4">
+                <h6 class="fw-bold mb-3 text-primary">🔥 近三月熱銷建案</h6>
+                <div id="topRankArea"></div>
+            </div>
+            <div class="card-pro p-4">
+                <h6 class="fw-bold mb-3 text-secondary">⚙️ 條件篩選</h6>
+                <select id="sDist" class="form-select mb-3" onchange="syncUI()"></select>
+                <select id="sProj" class="form-select mb-3" onchange="refreshVisuals()"></select>
+                <select id="sRoom" class="form-select" onchange="refreshVisuals()">
+                    <option value="all">所有房型</option><option value="2">2 房</option><option value="3">3 房</option><option value="1">1 房</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="col-xl-9 col-lg-8">
+            <div class="card-pro overflow-hidden">
+                <div class="ai-zone d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold">✨ AI 聯網即時趨勢解讀</h5>
+                    <button class="btn btn-light btn-sm rounded-pill fw-bold text-primary" onclick="generateAI()">生成專業報告</button>
+                </div>
+                <div id="aiRes" class="p-4 bg-white" style="min-height: 200px;">
+                    <p class="text-muted text-center mt-4">等待數據上傳與 AI 啟動...</p>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6"><div class="card-pro p-3"><h6>📊 每月成交趨勢</h6><div class="chart-box"><canvas id="ch1"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card-pro p-3"><h6>💰 均價變化 (萬/坪)</h6><div class="chart-box"><canvas id="ch2"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card-pro p-3"><h6>🏠 區域佔比</h6><div class="chart-box"><canvas id="ch3"></canvas></div></div></div>
+                <div class="col-md-6"><div class="card-pro p-3"><h6>📍 均價對比</h6><div class="chart-box"><canvas id="ch4"></canvas></div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let db = [];
+    let charts = {};
+    const LOCS = ["大坪林", "十四張", "央北", "環河路", "溪園路", "中央路"];
+
+    document.getElementById('csvFile').addEventListener('change', e => {
+        Papa.parse(e.target.files[0], {
+            header: false, skipEmptyLines: true, encoding: "UTF-8",
+            complete: (res) => {
+                db = parseCSV(res.data);
+                if(db.length > 0) {
+                    document.getElementById('dashboardUI').classList.remove('d-none');
+                    initSelectors(); syncUI();
+                } else { alert("找不到中永和/新店數據！"); }
+            }
+        });
+    });
+
+    function parseCSV(data) {
+        let out = [];
+        for(let i=1; i<data.length; i++) {
+            const r = data[i]; if(!r[0]) continue;
+            const dist = r[0].replace(/^\ufeff/, "").trim();
+            const addr = r[2] || "";
+            if((dist.includes("中和") || dist.includes("永和") || (dist.includes("新店") && LOCS.some(k => addr.includes(k)))) && (r[12]||"").includes("住")) {
+                const yr = parseInt(r[7].substring(0, r[7].length - 4)) + 1911;
+                const mm = r[7].substring(r[7].length - 4, r[7].length - 2);
+                out.push({ dist, name: r[28]||r[26]||"未知", room: (r[16]||0).toString(), price: Math.round((Number(r[22])*3.3058)/10000 * 10)/10, month: `${yr}-${mm}`, ts: new Date(yr, mm-1) });
+            }
+        }
+        return out;
+    }
+
+    function initSelectors() {
+        const d = document.getElementById('sDist');
+        const set = [...new Set(db.map(x => x.dist))].sort();
+        d.innerHTML = '<option value="all">所有行政區</option>';
+        set.forEach(s => d.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+
+    function syncUI() {
+        const df = document.getElementById('sDist').value;
+        const ps = document.getElementById('sProj');
+        const projs = [...new Set(db.filter(x => df === 'all' || x.dist === df).map(x => x.name))].sort();
+        ps.innerHTML = '<option value="all">所有建案彙總</option>';
+        projs.forEach(p => ps.innerHTML += `<option value="${p}">${p}</option>`);
+
+        // Ranking
+        const latest = [...db].sort((a,b)=>b.ts-a.ts)[0].ts;
+        const limit = new Date(latest); limit.setMonth(limit.getMonth()-2);
+        let counts = {};
+        db.filter(x => x.ts >= limit).forEach(x => counts[x.name] = (counts[x.name]||0)+1);
+        const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        document.getElementById('topRankArea').innerHTML = top.map((x,i) => 
+            `<div class="rank-item"><span class="d-flex align-items-center"><span class="rank-idx">${i+1}</span><b>${x[0]}</b></span><span class="badge bg-light text-dark">${x[1]} 件</span></div>`).join('');
+        
+        refreshVisuals();
+    }
+
+    function refreshVisuals() {
+        const df = document.getElementById('sDist').value;
+        const pf = document.getElementById('sProj').value;
+        const rf = document.getElementById('sRoom').value;
+        const filtered = db.filter(x => (df==='all'||x.dist===df) && (pf==='all'||x.name===pf) && (rf==='all'||x.room===rf));
+
+        let mD = {}, dD = {};
+        filtered.forEach(x => {
+            if(!mD[x.month]) mD[x.month] = { c:0, s:0 }; mD[x.month].c++; mD[x.month].s += x.price;
+            if(!dD[x.dist]) dD[x.dist] = { c:0, s:0 }; dD[x.dist].c++; dD[x.dist].s += x.price;
+        });
+        const ml = Object.keys(mD).sort();
+        const dl = Object.keys(dD).sort();
+
+        makeChart('ch1', 'bar', ml, ml.map(l => mD[l].c), '#2563eb', '成交件數');
+        makeChart('ch2', 'line', ml, ml.map(l => (mD[l].s/mD[l].c).toFixed(1)), '#10b981', '均價(萬)');
+        makeChart('ch3', 'pie', dl, dl.map(l => dD[l].c), ['#2563eb','#10b981','#f59e0b','#ef4444'], '分佈');
+        makeChart('ch4', 'bar', dl, dl.map(l => (dD[l].s/dD[l].c).toFixed(1)), '#f59e0b', '單價');
+    }
+
+    function makeChart(id, type, labels, data, color, label) {
+        if(charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+            type, data: { labels, datasets: [{ label, data, backgroundColor: color, borderColor: type==='line'?color:'#fff', tension: 0.3 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: type==='pie' } } }
+        });
+    }
+
+    async function generateAI() {
+        const key = document.getElementById('apiKey').value;
+        if(!key) return alert("請輸入 API Key");
+        const out = document.getElementById('aiRes');
+        out.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">AI 正在深度掃描 2026 時事...</p></div>';
+        
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: `你是一位 2026 年台灣房產專家。目前數據顯示成交均價為 ${db[0].price} 萬/坪。請分析 2026 年第七波信用管制、萬大線進度對中永和/新店房市的影響。請用繁體中文回覆並使用 <br> 換行。` }] }] })
+            });
+            const d = await res.json();
+            out.innerHTML = `<div>${d.candidates[0].content.parts[0].text.replace(/\n/g, "<br>")}</div>`;
+        } catch (e) {
+            out.innerHTML = '<div class="alert alert-danger">API 連線被瀏覽器攔截。建議將此 HTML 上傳至 GitHub Pages 或使用 VS Code Live Server 開啟。</div>';
+        }
+    }
+</script>
+</body>
+</html>
+
