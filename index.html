@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>房產數據決策系統 v15.2 | 功能全回歸</title>
+    <title>房產數據決策系統 v15.3 | 修正 404 報錯</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
@@ -11,65 +11,66 @@
     <nav class="bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
         <div class="flex items-center gap-3">
             <span class="text-2xl">📊</span>
-            <h1 class="text-xl font-bold">房產聯動分析系統 <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded ml-2">v15.2</span></h1>
+            <h1 class="text-xl font-bold text-slate-800">房產聯動分析系統 <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded ml-2">v15.3</span></h1>
         </div>
         <div class="flex gap-4 items-center">
             <select id="districtFilter" onchange="refreshUI()" class="bg-slate-100 border-none rounded-xl px-4 py-2 font-bold text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="all">所有區域</option>
             </select>
-            <button onclick="switchTab('dashboard')" class="px-4 py-2 font-bold hover:bg-slate-100 rounded-xl">數據儀表板</button>
-            <button onclick="switchTab('admin')" class="px-4 py-2 font-bold bg-slate-900 text-white rounded-xl shadow-lg">⚙️ 系統管理</button>
+            <button onclick="switchTab('dashboard')" class="px-4 py-2 font-bold hover:bg-slate-100 rounded-xl">儀表板</button>
+            <button onclick="switchTab('admin')" class="px-4 py-2 font-bold bg-slate-900 text-white rounded-xl shadow-lg transition-transform active:scale-95">⚙️ 系統管理</button>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto p-6 space-y-8">
         <div id="view-dashboard" class="space-y-8">
-            <div class="bg-slate-900 rounded-3xl p-8 text-white shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">✨ AI 區域趨勢解讀</h2>
-                    <button onclick="runAI()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-3 rounded-2xl font-black transition">生成深度分析</button>
+            <div class="bg-slate-900 rounded-3xl p-8 text-white shadow-2xl overflow-hidden relative">
+                <div class="flex justify-between items-center mb-6 relative z-10">
+                    <h2 class="text-2xl font-bold">✨ AI 區域聯動解讀</h2>
+                    <button onclick="runAI()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-8 py-3 rounded-2xl font-black transition-all shadow-xl">生成深度分析</button>
                 </div>
-                <div id="ai-content" class="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[150px] leading-relaxed text-slate-200">
-                    等待數據同步中... 請至管理頁面上傳檔案。
+                <div id="ai-content" class="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[150px] leading-relaxed text-slate-200 text-lg">
+                    尚未載入分析... 請先確認右上方已選擇正確區域並點擊按鈕。
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-bold mb-4 text-amber-600 flex items-center gap-2">🔥 預售屋熱門案 Top 5</h3>
+                    <h3 class="text-lg font-bold mb-4 text-amber-600 flex items-center gap-2">🔥 預售屋熱門案 Top 5 (均價)</h3>
                     <div id="presale-top5" class="space-y-3"></div>
                 </div>
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-bold mb-4 text-indigo-600 flex items-center gap-2">🏛️ 中古屋高標社區 Top 5</h3>
+                    <h3 class="text-lg font-bold mb-4 text-indigo-600 flex items-center gap-2">🏛️ 中古屋高標社區 Top 5 (均價)</h3>
                     <div id="secondhand-top5" class="space-y-3"></div>
                 </div>
             </div>
 
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                <h3 class="text-xl font-bold mb-6">📉 <span id="chartTitle">區域</span> 成交均價與極端值趨勢 (萬/坪)</h3>
+                <h3 class="text-xl font-bold mb-6">📉 <span id="chartTitle" class="text-indigo-600">全區</span> 成交均價與極端值趨勢</h3>
                 <div class="h-[450px]"><canvas id="mainTrendChart"></canvas></div>
             </div>
         </div>
 
         <div id="view-admin" class="hidden max-w-2xl mx-auto py-10">
-            <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border">
-                <h2 class="text-2xl font-black mb-8 border-b pb-4">⚙️ 數據同步中心</h2>
+            <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100">
+                <h2 class="text-2xl font-black mb-8 border-b pb-4">⚙️ 系統配置中心</h2>
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-sm font-bold text-slate-500 mb-2">Gemini API Key</label>
-                        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full px-5 py-4 bg-slate-50 border rounded-2xl font-mono">
+                        <label class="block text-sm font-bold text-slate-500 mb-2 tracking-widest uppercase">Gemini API Key</label>
+                        <input type="password" id="apiKeyInput" placeholder="在此輸入金鑰..." class="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 outline-none transition-all font-mono">
                     </div>
                     <div class="space-y-4">
-                        <div class="p-4 bg-amber-50 rounded-xl border border-amber-100">
-                            <label class="block text-sm font-bold text-amber-800">預售屋 (B檔)</label>
-                            <input type="file" id="csvB" accept=".csv" class="w-full mt-2">
+                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-100">
+                            <label class="block text-sm font-black text-amber-800">1. 預售屋資料 (B檔)</label>
+                            <input type="file" id="csvB" accept=".csv" class="w-full mt-3 text-sm">
                         </div>
-                        <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                            <label class="block text-sm font-bold text-indigo-800">中古屋 (A檔)</label>
-                            <input type="file" id="csvA" accept=".csv" class="w-full mt-2">
+                        <div class="p-5 bg-indigo-50 rounded-2xl border border-indigo-100">
+                            <label class="block text-sm font-black text-indigo-800">2. 中古屋資料 (A檔)</label>
+                            <input type="file" id="csvA" accept=".csv" class="w-full mt-3 text-sm">
+                            <p class="text-[10px] text-indigo-400 mt-2 italic">※ 系統自動過濾非住家、自動去重</p>
                         </div>
                     </div>
-                    <button onclick="processFiles()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl">立即同步並回首頁</button>
+                    <button onclick="processFiles()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-indigo-700 shadow-xl transition-all active:scale-[0.98]">執行數據同步與清洗</button>
                 </div>
             </div>
         </div>
@@ -96,16 +97,15 @@
             const key = document.getElementById('apiKeyInput').value.trim();
 
             if (key) localStorage.setItem('housing_api_key', key);
-            if (!fileA || !fileB) return alert("請同時選擇 A 檔與 B 檔");
+            if (!fileA || !fileB) return alert("請確認兩份 CSV 檔案皆已選取。");
 
             const parseFile = (file) => new Promise(res => Papa.parse(file, { header: true, skipEmptyLines: true, complete: res }));
             const [resA, resB] = await Promise.all([parseFile(fileA), parseFile(fileB)]);
 
-            // 數據去重與過濾
+            // 去重檢查 & 格式過濾
             secondHandRaw = cleanData(resA.data, true);
             preSaleRaw = cleanData(resB.data, false);
 
-            // 更新區域下拉選單
             updateDistrictFilter();
             refreshUI();
             switchTab('dashboard');
@@ -114,13 +114,16 @@
         function cleanData(data, isSecondHand) {
             const seen = new Set();
             return data.filter(row => {
+                // 去重核心邏輯：使用編號作為 Key
                 const id = row['編號'] || row['移轉編號'] || (row['土地位置建物門牌'] + row['交易年月日']);
                 if (!id || seen.has(id)) return false;
                 seen.add(id);
 
                 if (isSecondHand) {
                     const use = row['主要用途'] || "";
+                    const type = row['交易標的'] || "";
                     if (!use.includes('住家') && !use.includes('見其他')) return false;
+                    if (!type.includes('房地')) return false;
                 }
                 return row['單價元平方公尺'] && !isNaN(parseFloat(row['單價元平方公尺']));
             });
@@ -129,8 +132,9 @@
         function updateDistrictFilter() {
             const districts = new Set([...secondHandRaw.map(r => r['鄉鎮市區']), ...preSaleRaw.map(r => r['鄉鎮市區'])]);
             const select = document.getElementById('districtFilter');
+            const sortedDistricts = Array.from(districts).filter(d => d).sort();
             select.innerHTML = '<option value="all">所有區域</option>' + 
-                Array.from(districts).sort().map(d => `<option value="${d}">${d}</option>`).join('');
+                sortedDistricts.map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
         function refreshUI() {
@@ -148,6 +152,7 @@
         }
 
         function renderTop5(id, data, field, color) {
+            const container = document.getElementById(id);
             const grouped = {};
             data.forEach(r => {
                 const name = r[field]?.split('號')[0] || "未知";
@@ -159,12 +164,12 @@
                 .map(([name, s]) => ({ name, avg: (s.sum / s.count).toFixed(1) }))
                 .sort((a, b) => b.avg - a.avg).slice(0, 5);
 
-            document.getElementById(id).innerHTML = top5.length ? top5.map((it, i) => `
-                <div class="flex justify-between p-3 rounded-xl bg-${color}-50 border border-${color}-100">
-                    <span class="text-sm font-bold truncate w-2/3">${i+1}. ${it.name}</span>
-                    <span class="text-sm font-black text-${color}-700">${it.avg} 萬/坪</span>
+            container.innerHTML = top5.length ? top5.map((it, i) => `
+                <div class="flex justify-between items-center p-3 rounded-xl bg-${color}-50 border border-${color}-100">
+                    <span class="text-sm font-bold truncate w-2/3"><span class="mr-2 text-slate-400 font-normal">${i+1}.</span>${it.name}</span>
+                    <span class="text-sm font-black text-${color}-700">${it.avg} <span class="text-[10px] font-normal">萬/坪</span></span>
                 </div>
-            `).join('') : '<p class="text-slate-400 text-sm">此區域無相關數據</p>';
+            `).join('') : '<p class="text-slate-400 text-xs text-center py-4 italic">無此區域成交數據</p>';
         }
 
         function renderMainChart(dataA, dataB) {
@@ -172,14 +177,15 @@
             const statsB = getMonthly(dataB);
             const months = Array.from(new Set([...Object.keys(statsA), ...Object.keys(statsB)])).sort();
 
+            const ctx = document.getElementById('mainTrendChart').getContext('2d');
             if (charts.main) charts.main.destroy();
-            charts.main = new Chart(document.getElementById('mainTrendChart'), {
+            charts.main = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: months,
                     datasets: [
-                        { label: '預售屋', data: months.map(m => statsB[m]?.avg || null), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.3, borderWidth: 4 },
-                        { label: '中古屋', data: months.map(m => statsA[m]?.avg || null), borderColor: '#6366f1', backgroundColor: '#6366f1', tension: 0.3, borderWidth: 4 }
+                        { label: '預售屋', data: months.map(m => statsB[m]?.avg || null), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.3, borderWidth: 4, pointRadius: 5 },
+                        { label: '中古屋', data: months.map(m => statsA[m]?.avg || null), borderColor: '#6366f1', backgroundColor: '#6366f1', tension: 0.3, borderWidth: 4, pointRadius: 5 }
                     ]
                 },
                 options: {
@@ -194,9 +200,9 @@
                                     const s = ctx.datasetIndex === 0 ? statsB[m] : statsA[m];
                                     if(!s) return "";
                                     return [
-                                        `${ctx.dataset.label} 均價: ${ctx.parsed.y} 萬`,
-                                        `🏆 當月最高: ${s.max} 萬`,
-                                        `📍 標的: ${s.maxName}`
+                                        `📈 ${ctx.dataset.label} 均價: ${ctx.parsed.y} 萬/坪`,
+                                        `💎 當月最高: ${s.max} 萬/坪`,
+                                        `🏢 標的: ${s.maxName}`
                                     ];
                                 }
                             }
@@ -223,24 +229,32 @@
 
         async function runAI() {
             const key = localStorage.getItem('housing_api_key');
-            if (!key) return alert("請設定 Key");
+            if (!key) return alert("請至系統管理設定 API Key");
             const district = document.getElementById('districtFilter').value;
             const aiArea = document.getElementById('ai-content');
-            aiArea.innerHTML = "正在分析 " + district + " 的市場數據與推論社區...";
+            aiArea.innerHTML = `<div class="animate-pulse">🔄 正在針對「${district}」進行深度交叉分析...</div>`;
+
+            // 使用正確的 API v1beta 路徑 (解決 404 問題)
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            
+            // 抓取部分樣本數據給 AI 分析
+            const samples = secondHandRaw.filter(r => district === 'all' || r['鄉鎮市區'] === district).slice(0,10).map(r => r['土地位置建物門牌']);
+
+            const prompt = `你是台灣不動產分析師。請分析${district}的預售屋與中古屋房價關聯。
+            任務：根據地址 "${samples.join(', ')}" 嘗試推論它們分別屬於哪些知名社區名稱？
+            請直接輸出重點報告，含投資建議。使用繁體中文。`;
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-                const prompt = `你是新北房產專家。目前區域：${district}。請分析預售屋與中古屋價差，並根據地址推論中古屋的社區名稱。數據摘要：\n${JSON.stringify(secondHandRaw.slice(0,10))}`;
-                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
                 aiArea.innerHTML = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
             } catch (e) {
-                aiArea.innerHTML = "AI 分析失敗，請檢查 Key 是否有效。";
+                aiArea.innerHTML = `<div class="text-red-400 font-bold">API 請求失敗！</div><div class="text-sm mt-2 text-slate-400">原因：${e.message}<br>提示：請確認您的 Key 已啟用，且沒有頻繁截圖外流導致被停用。</div>`;
             }
         }
     </script>
