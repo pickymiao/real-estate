@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v28.7 - 亂碼剋星版</title>
+    <title>ESTATE PRO v28.8 - 終極透視版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -19,25 +19,31 @@
 
     <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.7</span></h1>
-            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Big5/UTF-8 Auto Decode & Fuzzy Match</p>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.8</span></h1>
+            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Force New DB v29 & Diagnostic Radar</p>
         </div>
         
         <div class="flex gap-4 items-center">
             <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500"><span id="syncText">等待中...</span></div>
-            <button onclick="clearFullDatabase()" class="text-[10px] text-red-400 font-bold hover:text-red-600">🗑️ 清空 DB</button>
+            
             <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏠 手動上傳預售</button>
+                <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏠 上傳預售 (presale.csv)</button>
                 <div id="preInfo" class="status-pill bg-indigo-50 text-indigo-600 mt-2 text-[9px]">DB: 0</div>
             </div>
             <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏢 手動上傳中古</button>
+                <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏢 上傳中古 (resale.csv)</button>
                 <div id="resInfo" class="status-pill bg-slate-100 text-slate-600 mt-2 text-[9px]">DB: 0</div>
             </div>
             <input type="file" id="preInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'presale')">
             <input type="file" id="resInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'resale')">
         </div>
     </header>
+
+    <div class="max-w-7xl mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] text-amber-800 font-mono">
+        <div class="font-bold mb-1">🛠️ 資料解析診斷雷達 (如果 DB 是 0，請看這裡的原因)</div>
+        <div id="presaleLog">預售屋：尚未載入</div>
+        <div id="resaleLog">中古屋：尚未載入</div>
+    </div>
 
     <div class="max-w-7xl mx-auto flex gap-10 border-b-2 border-slate-200 mb-6">
         <button id="btn-presale" onclick="changeTab('presale')" class="tab-btn active py-4 text-xs font-bold uppercase tracking-widest">Presale / 預售屋</button>
@@ -82,7 +88,8 @@
         let CURRENT_TAB = 'presale';
         let chartInstances = {};
 
-        const dbReq = indexedDB.open("EstateDB_v28", 1);
+        // ⚠️ 關鍵更新：將版本號改為 v29，強制瀏覽器放棄舊的損壞結構，建立全新 DB
+        const dbReq = indexedDB.open("EstateDB_v29", 1);
         dbReq.onupgradeneeded = (e) => {
             let _db = e.target.result;
             _db.createObjectStore("presale", { keyPath: "uid" });
@@ -98,30 +105,28 @@
             updateSyncUI('同步完成');
         }
 
-        // --- 解碼核心：智能判斷 UTF-8 或 Big5 ---
         async function decodeBuffer(buffer) {
             let text = new TextDecoder('utf-8').decode(buffer);
-            // 若出現亂碼替代字元，代表原檔是 Big5 (Excel 存檔預設)
-            if (text.includes('')) {
-                text = new TextDecoder('big5').decode(buffer);
-            }
+            if (text.includes('')) text = new TextDecoder('big5').decode(buffer);
             return text.trim().replace(/^\uFEFF/, '');
         }
 
         async function sync(url, type) {
             try {
                 const res = await fetch(url);
-                const buffer = await res.arrayBuffer(); // 改抓 ArrayBuffer 保留原始位元
+                if (!res.ok) throw new Error("File not found on Github");
+                const buffer = await res.arrayBuffer();
                 const text = await decodeBuffer(buffer);
                 await process(text, type);
-            } catch (e) { console.error("Sync Error", type); }
+            } catch (e) { 
+                document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '預售屋' : '中古屋'}：從 Github 抓取失敗 (${e.message})，請檢查網址或改用手動上傳。`;
+            }
         }
 
         async function handleManualUpload(files, type) { 
             const buffer = await files[0].arrayBuffer(); 
             const text = await decodeBuffer(buffer);
             await process(text, type); 
-            alert(`手動上傳 ${type === 'presale'?'預售':'中古'} 完畢！`);
         }
 
         async function process(csvText, type) {
@@ -130,10 +135,11 @@
 
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
-            let addedCount = 0;
+            
+            // 診斷統計變數
+            let stats = { total: parsed.data.length, dropUse: 0, dropType: 0, dropNoPrice: 0, saved: 0 };
 
             parsed.data.forEach(row => {
-                // 模糊欄位抓取器：不管欄位叫 rps12 還是 RPS12 還是 用途，通通抓得到
                 const getV = (k1, k2) => {
                     const keys = Object.keys(row);
                     const t = keys.find(x => x.toLowerCase().includes(k1.toLowerCase())) || keys.find(x => x.includes(k2));
@@ -143,29 +149,20 @@
                 const use = String(getV('rps12', '用途') || "").trim();
                 const transType = String(getV('rps01', '標的') || "");
 
-                // 嚴格過濾：必須是住家，且排除純土地
-                if (use !== "住家用") return;
-                if (transType.includes("土地") && !transType.includes("建物")) return;
+                // ⚠️ 放寬標準：只要用途包含「住」就可以，防止政府資料寫「住商用」被濾掉
+                if (use !== "" && !use.includes("住")) { stats.dropUse++; return; }
+                if (transType.includes("土地") && !transType.includes("建物")) { stats.dropType++; return; }
 
                 const dist = String(getV('district', '鄉鎮市區') || "").trim();
-                const priceStr = getV('rps22', '單價');
-                const priceRaw = parseFloat(priceStr) || 0;
+                const priceRaw = parseFloat(getV('rps22', '單價')) || 0;
                 const dateRaw = String(getV('rps07', '年月') || "");
 
-                if (!dist || !dateRaw || priceRaw <= 0) return;
+                if (!dist || !dateRaw || priceRaw <= 0) { stats.dropNoPrice++; return; }
 
                 const dateClean = dateRaw.substring(0, 5);
-                let name = "";
-                if (type === 'presale') {
-                    name = String(getV('rps28', '建案') || "未知案名").trim();
-                } else {
-                    const addr = String(getV('rps02', '區段') || "");
-                    name = addr.split(/[樓室之]/)[0].replace("新北市", "").trim().substring(0, 10);
-                }
-
-                const roomStr = getV('rps16', '房');
-                const room = parseInt(roomStr) || 0;
-
+                let name = type === 'presale' ? String(getV('rps28', '建案') || "未知案名").trim() : String(getV('rps02', '區段') || "").split(/[樓室之]/)[0].replace("新北市", "").trim().substring(0, 10);
+                
+                const room = parseInt(getV('rps16', '房')) || 0;
                 const buildDate = String(getV('rps14', '完成') || "0");
                 const ageRaw = parseInt(dateRaw.substring(0, 3)) - parseInt(buildDate.substring(0, 3));
                 const age = type === 'presale' ? 0 : (isNaN(ageRaw) ? 0 : Math.max(0, ageRaw));
@@ -177,20 +174,13 @@
                     date: dateClean,
                     room: room >= 4 ? "4房以上" : room + "房"
                 });
-                addedCount++;
+                stats.saved++;
             });
 
-            return new Promise(r => { 
-                tx.oncomplete = async () => { 
-                    // 終極除錯：如果讀到資料卻0筆寫入，直接把真實欄位印出來給你看
-                    if (addedCount === 0 && parsed.data.length > 0) {
-                        const firstRowHeaders = Object.keys(parsed.data[0]).join(", ");
-                        alert(`【除錯報告】\n檔案內有 ${parsed.data.length} 筆，但成功存入 0 筆。\n\n程式偵測到的真實欄位名稱為：\n${firstRowHeaders}\n\n原因：這些欄位名稱對不起來，或是資料中沒有「住家用」。`);
-                    }
-                    await loadFromDB(); 
-                    r(); 
-                }; 
-            });
+            // 更新診斷面板
+            document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '預售屋' : '中古屋'}：讀取 ${stats.total} 筆 👉 成功存入 ${stats.saved} 筆。 (攔截：非住宅 ${stats.dropUse} 筆, 純土地 ${stats.dropType} 筆, 無單價/日期 ${stats.dropNoPrice} 筆)`;
+
+            return new Promise(r => { tx.oncomplete = async () => { await loadFromDB(); r(); }; });
         }
 
         async function loadFromDB() {
@@ -214,7 +204,12 @@
             const dists = [...new Set(data.map(d => d.dist))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
             
-            if (dates.length === 0) return;
+            if (dates.length === 0) {
+                // 清空畫面
+                ['chartPrice', 'chartVol'].forEach(id => { if(chartInstances[id]) chartInstances[id].destroy(); });
+                ['rankDistPrice', 'rankDistVol', 'rankItemPrice', 'rankItemHot'].forEach(id => document.getElementById(id).innerHTML = '');
+                return;
+            }
 
             const fDist = document.getElementById('fDist');
             const fStart = document.getElementById('fStart');
@@ -250,6 +245,7 @@
         }
 
         function render(data) {
+            if(data.length === 0) return;
             const dates = [...new Set(data.map(d => d.date))].sort();
             const color = CURRENT_TAB === 'presale' ? '#4f46e5' : '#1e293b';
 
@@ -302,8 +298,6 @@
         }
         function saveState(k, v) { STATES[CURRENT_TAB][k] = v; runFilter(); }
         function updateSyncUI(t) { document.getElementById('syncText').innerText = t; }
-        function clearFullDatabase() { if(confirm("確定清空？")) { db.transaction("presale","readwrite").objectStore("presale").clear(); db.transaction("resale","readwrite").objectStore("resale").clear(); location.reload(); } }
-        function copyRichData() { navigator.clipboard.writeText("ESTATE PRO 數據快照"); alert("✅ 數據已複製！"); }
     </script>
 </body>
 </html>
