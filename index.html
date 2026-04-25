@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v28.8 - 終極透視版</title>
+    <title>ESTATE PRO v28.9 - 全面解鎖版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -19,19 +19,19 @@
 
     <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.8</span></h1>
-            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Force New DB v29 & Diagnostic Radar</p>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.9</span></h1>
+            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">No-Filter Mode & Direct Mapping</p>
         </div>
         
         <div class="flex gap-4 items-center">
             <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500"><span id="syncText">等待中...</span></div>
             
             <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏠 上傳預售 (presale.csv)</button>
+                <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏠 上傳預售</button>
                 <div id="preInfo" class="status-pill bg-indigo-50 text-indigo-600 mt-2 text-[9px]">DB: 0</div>
             </div>
             <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏢 上傳中古 (resale.csv)</button>
+                <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏢 上傳中古</button>
                 <div id="resInfo" class="status-pill bg-slate-100 text-slate-600 mt-2 text-[9px]">DB: 0</div>
             </div>
             <input type="file" id="preInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'presale')">
@@ -39,10 +39,10 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] text-amber-800 font-mono">
-        <div class="font-bold mb-1">🛠️ 資料解析診斷雷達 (如果 DB 是 0，請看這裡的原因)</div>
-        <div id="presaleLog">預售屋：尚未載入</div>
-        <div id="resaleLog">中古屋：尚未載入</div>
+    <div class="max-w-7xl mx-auto mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[10px] text-emerald-800 font-mono">
+        <div class="font-bold mb-1">✅ 解鎖版診斷：目前已關閉「非住宅」攔截器，強制讀入所有有價格的資料。</div>
+        <div id="presaleLog">等待操作...</div>
+        <div id="resaleLog">等待操作...</div>
     </div>
 
     <div class="max-w-7xl mx-auto flex gap-10 border-b-2 border-slate-200 mb-6">
@@ -88,12 +88,12 @@
         let CURRENT_TAB = 'presale';
         let chartInstances = {};
 
-        // ⚠️ 關鍵更新：將版本號改為 v29，強制瀏覽器放棄舊的損壞結構，建立全新 DB
-        const dbReq = indexedDB.open("EstateDB_v29", 1);
+        // ⚠️ 再次升級版本號至 v30，確保乾淨開局
+        const dbReq = indexedDB.open("EstateDB_v30", 1);
         dbReq.onupgradeneeded = (e) => {
             let _db = e.target.result;
-            _db.createObjectStore("presale", { keyPath: "uid" });
-            _db.createObjectStore("resale", { keyPath: "uid" });
+            if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
+            if(!_db.objectStoreNames.contains("resale")) _db.createObjectStore("resale", { keyPath: "uid" });
         };
         dbReq.onsuccess = (e) => { db = e.target.result; init(); };
 
@@ -105,21 +105,15 @@
             updateSyncUI('同步完成');
         }
 
-        async function decodeBuffer(buffer) {
-            let text = new TextDecoder('utf-8').decode(buffer);
-            if (text.includes('')) text = new TextDecoder('big5').decode(buffer);
-            return text.trim().replace(/^\uFEFF/, '');
-        }
-
         async function sync(url, type) {
             try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error("File not found on Github");
+                if (!res.ok) throw new Error("Github 連結失效");
                 const buffer = await res.arrayBuffer();
                 const text = await decodeBuffer(buffer);
                 await process(text, type);
             } catch (e) { 
-                document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '預售屋' : '中古屋'}：從 Github 抓取失敗 (${e.message})，請檢查網址或改用手動上傳。`;
+                document.getElementById(`${type}Log`).innerText = `無法載入 Github 檔案，請點擊按鈕手動上傳。`;
             }
         }
 
@@ -129,56 +123,63 @@
             await process(text, type); 
         }
 
+        async function decodeBuffer(buffer) {
+            let text = new TextDecoder('utf-8').decode(buffer);
+            if (text.includes('')) text = new TextDecoder('big5').decode(buffer);
+            return text.trim().replace(/^\uFEFF/, '');
+        }
+
         async function process(csvText, type) {
             const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() });
             if (parsed.data.length === 0) return;
 
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
-            
-            // 診斷統計變數
-            let stats = { total: parsed.data.length, dropUse: 0, dropType: 0, dropNoPrice: 0, saved: 0 };
+            let saved = 0;
 
             parsed.data.forEach(row => {
-                const getV = (k1, k2) => {
-                    const keys = Object.keys(row);
-                    const t = keys.find(x => x.toLowerCase().includes(k1.toLowerCase())) || keys.find(x => x.includes(k2));
-                    return t ? row[t] : undefined;
+                const keys = Object.keys(row);
+                // 強化尋找欄位的邏輯
+                const findValue = (k) => {
+                    const foundKey = keys.find(x => x.toLowerCase().includes(k.toLowerCase()));
+                    return foundKey ? row[foundKey] : null;
                 };
 
-                const use = String(getV('rps12', '用途') || "").trim();
-                const transType = String(getV('rps01', '標的') || "");
+                const dist = findValue('district') || findValue('鄉鎮市區');
+                const pricePerPing = parseFloat(findValue('rps22')) || 0; // 單價(元/平方公尺)
+                const dateRaw = findValue('rps07') || findValue('交易年月');
 
-                // ⚠️ 放寬標準：只要用途包含「住」就可以，防止政府資料寫「住商用」被濾掉
-                if (use !== "" && !use.includes("住")) { stats.dropUse++; return; }
-                if (transType.includes("土地") && !transType.includes("建物")) { stats.dropType++; return; }
+                // 基本門檻：必須有區域、日期、價格
+                if (!dist || !dateRaw || pricePerPing <= 0) return;
 
-                const dist = String(getV('district', '鄉鎮市區') || "").trim();
-                const priceRaw = parseFloat(getV('rps22', '單價')) || 0;
-                const dateRaw = String(getV('rps07', '年月') || "");
-
-                if (!dist || !dateRaw || priceRaw <= 0) { stats.dropNoPrice++; return; }
-
-                const dateClean = dateRaw.substring(0, 5);
-                let name = type === 'presale' ? String(getV('rps28', '建案') || "未知案名").trim() : String(getV('rps02', '區段') || "").split(/[樓室之]/)[0].replace("新北市", "").trim().substring(0, 10);
+                const dateClean = String(dateRaw).substring(0, 5); // 取 11301 這種格式
                 
-                const room = parseInt(getV('rps16', '房')) || 0;
-                const buildDate = String(getV('rps14', '完成') || "0");
-                const ageRaw = parseInt(dateRaw.substring(0, 3)) - parseInt(buildDate.substring(0, 3));
-                const age = type === 'presale' ? 0 : (isNaN(ageRaw) ? 0 : Math.max(0, ageRaw));
+                // 名稱判斷
+                let name = "";
+                if (type === 'presale') {
+                    name = findValue('rps28') || "未知案名";
+                } else {
+                    const sec = findValue('rps02') || "";
+                    name = sec.split(/[樓室之]/)[0].replace("新北市", "").trim().substring(0, 10);
+                }
+
+                const roomVal = parseInt(findValue('rps16')) || 0;
+                const buildDate = String(findValue('rps14') || "0");
+                const age = type === 'presale' ? 0 : Math.max(0, parseInt(dateRaw.substring(0, 3)) - parseInt(buildDate.substring(0, 3)));
 
                 store.put({
-                    uid: `${dist}_${dateRaw}_${priceRaw}_${Math.random()}`,
-                    dist, name, age,
-                    price: (priceRaw / 0.3025) / 10000,
+                    uid: `${dist}_${dateRaw}_${pricePerPing}_${Math.random()}`,
+                    dist: dist.trim(), 
+                    name: name.trim(), 
+                    age,
+                    price: (pricePerPing / 0.3025) / 10000, // 換算成萬/坪
                     date: dateClean,
-                    room: room >= 4 ? "4房以上" : room + "房"
+                    room: roomVal >= 4 ? "4房以上" : roomVal + "房"
                 });
-                stats.saved++;
+                saved++;
             });
 
-            // 更新診斷面板
-            document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '預售屋' : '中古屋'}：讀取 ${stats.total} 筆 👉 成功存入 ${stats.saved} 筆。 (攔截：非住宅 ${stats.dropUse} 筆, 純土地 ${stats.dropType} 筆, 無單價/日期 ${stats.dropNoPrice} 筆)`;
+            document.getElementById(`${type}Log`).innerText = `成功存入 ${saved} 筆資料到本地資料庫！`;
 
             return new Promise(r => { tx.oncomplete = async () => { await loadFromDB(); r(); }; });
         }
@@ -201,27 +202,18 @@
 
         function refreshUI() {
             const data = MEMORY[CURRENT_TAB];
+            if (data.length === 0) return;
+
             const dists = [...new Set(data.map(d => d.dist))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
             
-            if (dates.length === 0) {
-                // 清空畫面
-                ['chartPrice', 'chartVol'].forEach(id => { if(chartInstances[id]) chartInstances[id].destroy(); });
-                ['rankDistPrice', 'rankDistVol', 'rankItemPrice', 'rankItemHot'].forEach(id => document.getElementById(id).innerHTML = '');
-                return;
-            }
+            document.getElementById('fDist').innerHTML = '<option value="all">全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
+            document.getElementById('fStart').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+            document.getElementById('fEnd').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
 
-            const fDist = document.getElementById('fDist');
-            const fStart = document.getElementById('fStart');
-            const fEnd = document.getElementById('fEnd');
-
-            fDist.innerHTML = '<option value="all">全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
-            fStart.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
-            fEnd.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
-
-            fDist.value = STATES[CURRENT_TAB].dist;
-            fStart.value = STATES[CURRENT_TAB].start || dates[0];
-            fEnd.value = STATES[CURRENT_TAB].end || dates[dates.length-1];
+            document.getElementById('fDist').value = STATES[CURRENT_TAB].dist;
+            document.getElementById('fStart').value = STATES[CURRENT_TAB].start || dates[0];
+            document.getElementById('fEnd').value = STATES[CURRENT_TAB].end || dates[dates.length-1];
             runFilter();
         }
 
@@ -231,7 +223,7 @@
             const filtered = data.filter(d => {
                 const mDist = s.dist === 'all' || d.dist === s.dist;
                 const mRoom = s.room === 'all' || d.room === s.room;
-                const mDate = d.date >= s.start && d.date <= s.end;
+                const mDate = d.date >= (s.start || "0") && d.date <= (s.end || "99999");
                 let mAge = true;
                 if (CURRENT_TAB === 'resale' && s.age !== 'all') {
                     if (s.age === '0-5') mAge = d.age <= 5;
@@ -245,7 +237,6 @@
         }
 
         function render(data) {
-            if(data.length === 0) return;
             const dates = [...new Set(data.map(d => d.date))].sort();
             const color = CURRENT_TAB === 'presale' ? '#4f46e5' : '#1e293b';
 
