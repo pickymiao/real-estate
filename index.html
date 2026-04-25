@@ -2,292 +2,284 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v30.0 - 自動去重版</title>
+    <title>ESTATE PRO v31.0 - 雙軌隔離版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #0f172a; }
-        .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: 800; }
-        .card { background: white; border-radius: 1.25rem; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .status-pill { padding: 2px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; }
-        select { background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.6rem; font-size: 0.8rem; width: 100%; outline: none; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; }
+        .tab-btn { transition: all 0.3s; border-bottom: 3px solid transparent; }
+        .tab-btn.active { border-color: #4f46e5; color: #4f46e5; font-weight: 800; background: #eef2ff; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .log-box { font-family: monospace; font-size: 10px; padding: 10px; border-radius: 8px; height: 60px; overflow-y: auto; }
+        select { background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; width: 100%; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
+    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v30.0</span></h1>
-            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Auto-Sync & Smart De-duplication</p>
+            <h1 class="text-2xl font-black text-slate-800">ESTATE ENGINE <span class="text-indigo-600">v31.0</span></h1>
+            <p class="text-slate-500 text-xs mt-1 font-bold tracking-widest uppercase">Dual-Engine Architecture / Big5 Priority</p>
         </div>
-        
-        <div class="flex gap-4 items-center">
-            <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500 font-mono">系統狀態：<span id="syncText">初始化...</span></div>
-            
-            <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs">🏠 更新預售</button>
-            <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs">🏢 更新中古</button>
-            
-            <input type="file" id="preInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'presale')">
-            <input type="file" id="resInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'resale')">
+        <div class="flex gap-2">
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-indigo-700">🔄 全球同步 (GitHub)</button>
+            <button onclick="document.getElementById('manualInput').click()" class="bg-white text-slate-700 border border-slate-200 px-4 py-2 rounded-lg font-bold text-xs shadow-sm hover:bg-slate-50">📁 手動更新</button>
+            <input type="file" id="manualInput" class="hidden" multiple onchange="handleManual(this.files)">
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div id="presaleLog" class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-[10px] text-indigo-800 font-mono">預售資料庫：檢索中...</div>
-        <div id="resaleLog" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10px] text-slate-800 font-mono">中古資料庫：檢索中...</div>
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-black text-indigo-600 uppercase">Presale Engine 預售屋引擎</span>
+                <span id="preCount" class="text-xs font-mono font-bold">DB: 0</span>
+            </div>
+            <div id="preLog" class="log-box bg-white/50 text-indigo-900">等待初始化...</div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase">Resale Engine 中古屋引擎</span>
+                <span id="resCount" class="text-xs font-mono font-bold text-white">DB: 0</span>
+            </div>
+            <div id="resLog" class="log-box bg-slate-900/50 text-slate-300">等待初始化...</div>
+        </div>
     </div>
 
-    <div class="max-w-7xl mx-auto flex gap-10 border-b-2 border-slate-200 mb-6">
-        <button id="btn-presale" onclick="changeTab('presale')" class="tab-btn active py-4 text-xs font-bold uppercase">Presale / 預售屋</button>
-        <button id="btn-resale" onclick="changeTab('resale')" class="tab-btn py-4 text-xs font-bold text-slate-400 uppercase">Resale / 中古屋</button>
+    <div class="max-w-7xl mx-auto flex mb-6 bg-white rounded-xl p-1 shadow-sm border border-slate-200">
+        <button id="tab-presale" onclick="switchTab('presale')" class="tab-btn active flex-1 py-3 text-sm font-black uppercase rounded-lg">🏠 預售實價登錄</button>
+        <button id="tab-resale" onclick="switchTab('resale')" class="tab-btn flex-1 py-3 text-sm font-black uppercase rounded-lg">🏢 中古屋實價登錄</button>
     </div>
 
     <main class="max-w-7xl mx-auto">
-        <div class="card mb-8 grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">District 區域</label><select id="fDist" onchange="saveState('dist', this.value)"></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">Room 房型</label><select id="fRoom" onchange="saveState('room', this.value)"><option value="all">全部</option><option value="1房">1房</option><option value="2房">2房</option><option value="3房">3房</option><option value="4房以上">4房以上</option></select></div>
-            <div id="ageGroup" class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">Age 屋齡</label><select id="fAge" onchange="saveState('age', this.value)"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">From 起始</label><select id="fStart" onchange="saveState('start', this.value)"></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">To 結束</label><select id="fEnd" onchange="saveState('end', this.value)"></select></div>
-            <div class="flex items-end"><button onclick="copyRichData()" class="w-full bg-indigo-50 text-indigo-600 border border-indigo-200 py-2.5 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-all">📋 複製數據</button></div>
+        <div class="card mb-8 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">區域</label><select id="fDist" onchange="updateFilters()"></select></div>
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">房型</label><select id="fRoom" onchange="updateFilters()"><option value="all">全部</option><option value="1房">1房</option><option value="2房">2房</option><option value="3房">3房</option><option value="4房以上">4房以上</option></select></div>
+            <div id="ageBox"><label class="text-[10px] font-black text-slate-400 uppercase">屋齡</label><select id="fAge" onchange="updateFilters()"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select></div>
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">時間區間</label>
+                <div class="flex gap-1"><select id="fStart" onchange="updateFilters()"></select><select id="fEnd" onchange="updateFilters()"></select></div>
+            </div>
+            <div class="flex items-end"><button onclick="copyData()" class="w-full bg-slate-100 hover:bg-slate-200 py-2 rounded-lg text-xs font-bold transition-colors">📋 複製報表數據</button></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="card h-[300px]"><canvas id="chartVol"></canvas></div>
-            <div class="card h-[300px]"><canvas id="chartPrice"></canvas></div>
+            <div class="card">
+                <h3 class="text-xs font-black text-slate-400 mb-4 uppercase">Sales Volume 成交量趨勢</h3>
+                <div class="h-[250px]"><canvas id="chartVol"></canvas></div>
+            </div>
+            <div class="card">
+                <h3 class="text-xs font-black text-slate-400 mb-4 uppercase">Price Trend 均價走勢</h3>
+                <div class="h-[250px]"><canvas id="chartPrice"></canvas></div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Avg. Price 區域均價</h4><div id="rankDistPrice" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Volume 成交量</h4><div id="rankDistVol" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Top Unit 最高單價</h4><div id="rankItemPrice" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Hot Project 熱門案件</h4><div id="rankItemHot" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 text-indigo-600 uppercase">Avg Price 區域均價</h4><div id="rankPrice" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 text-indigo-600 uppercase">Volume 成交量</h4><div id="rankVol" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 text-indigo-600 uppercase">Top Sales 最高單價</h4><div id="rankTop" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 text-indigo-600 uppercase">Hot Projects 熱門建案</h4><div id="rankHot" class="space-y-3"></div></div>
         </div>
     </main>
 
     <script>
-        const CLOUD = {
+        const CONFIG = {
             presale: "https://raw.githubusercontent.com/pickymiao/real-estate/main/presale.csv",
             resale: "https://raw.githubusercontent.com/pickymiao/real-estate/main/resale.csv"
         };
 
         let db;
         let MEMORY = { presale: [], resale: [] };
-        let STATES = { 
-            presale: { dist: 'all', room: 'all', age: 'all', start: '', end: '' },
-            resale: { dist: 'all', room: 'all', age: 'all', start: '', end: '' }
-        };
-        let CURRENT_TAB = 'presale';
-        let chartInstances = {};
+        let CURRENT_MODE = 'presale';
+        let charts = {};
 
-        // 使用新 DB 版本，確保邏輯乾淨
-        const dbReq = indexedDB.open("EstateMaster_v1", 1);
-        dbReq.onupgradeneeded = (e) => {
+        // 初始化資料庫 (v35 強制刷新)
+        const request = indexedDB.open("EstateStorage_v35", 1);
+        request.onupgradeneeded = e => {
             let _db = e.target.result;
-            // 以「交易編號」作為唯一 Key，防止重複
             _db.createObjectStore("presale", { keyPath: "id" });
             _db.createObjectStore("resale", { keyPath: "id" });
         };
-        dbReq.onsuccess = (e) => { db = e.target.result; startup(); };
+        request.onsuccess = e => { db = e.target.result; syncAll(); };
 
-        async function startup() {
-            updateSyncUI('自動同步中...');
-            // 優先從 GitHub 讀取
-            await Promise.all([
-                syncCloud(CLOUD.presale, 'presale'),
-                syncCloud(CLOUD.resale, 'resale')
-            ]);
-            updateSyncUI('同步完成');
-            await loadAndRefresh();
+        async function syncAll() {
+            log('pre', '開始從 GitHub 同步...');
+            log('res', '開始從 GitHub 同步...');
+            await Promise.all([fetchAndParse(CONFIG.presale, 'presale'), fetchAndParse(CONFIG.resale, 'resale')]);
+            loadData();
         }
 
-        async function syncCloud(url, type) {
+        async function fetchAndParse(url, type) {
             try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error("Fetch Failed");
                 const buffer = await res.arrayBuffer();
-                const text = await smartDecode(buffer);
-                await processCSV(text, type);
+                // 優先使用 Big5 解碼 (解決台灣實價登錄亂碼問題)
+                let text = new TextDecoder('big5').decode(buffer);
+                if (!text.includes('district') && !text.includes('鄉鎮市區')) {
+                    text = new TextDecoder('utf-8').decode(buffer);
+                }
+                await processData(text, type);
             } catch (e) {
-                document.getElementById(`${type}Log`).innerText = `⚠️ 雲端讀取失敗，請使用手動更新。`;
+                log(type === 'presale' ? 'pre' : 'res', "同步失敗，請點選按鈕手動上傳檔案。");
             }
         }
 
-        async function handleManualUpload(files, type) {
-            updateSyncUI('手動處理中...');
-            const buffer = await files[0].arrayBuffer();
-            const text = await smartDecode(buffer);
-            await processCSV(text, type);
-            updateSyncUI('更新完成');
-            await loadAndRefresh();
-        }
-
-        async function smartDecode(buffer) {
-            // 嘗試 UTF-8
-            let text = new TextDecoder('utf-8').decode(buffer);
-            // 如果沒看到關鍵欄位或出現怪字元，嘗試 Big5
-            if (!text.includes('district') && !text.includes('鄉鎮市區')) {
-                text = new TextDecoder('big5').decode(buffer);
+        async function handleManual(files) {
+            for (let file of files) {
+                const type = file.name.includes('resale') ? 'resale' : 'presale';
+                const buffer = await file.arrayBuffer();
+                let text = new TextDecoder('big5').decode(buffer);
+                if (!text.includes('district') && !text.includes('鄉鎮市區')) {
+                    text = new TextDecoder('utf-8').decode(buffer);
+                }
+                await processData(text, type);
             }
-            return text.trim().replace(/^\uFEFF/, '');
+            loadData();
         }
 
-        async function processCSV(csvText, type) {
-            const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() });
-            if (parsed.data.length === 0) return;
-
+        async function processData(csvText, type) {
+            const result = Papa.parse(csvText, { header: true, skipEmptyLines: true });
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
             let count = 0;
 
-            parsed.data.forEach(row => {
-                const keys = Object.keys(row);
-                const getV = (k) => {
-                    const f = keys.find(x => x.toLowerCase().includes(k.toLowerCase()));
-                    return f ? row[f] : null;
-                };
+            result.data.forEach(row => {
+                // 核心邏輯：針對兩種 CSV 標題差異做適配
+                const district = row['district'] || row['鄉鎮市區'];
+                const price_m2 = parseFloat(row['rps22']) || parseFloat(row['rps22_amountsunitdollars']) || 0;
+                const dateRaw = row['rps07'] || row['rps07_yyymmddroc']; // 重要修正
+                const id = row['rps27'] || row['rps31'] || Math.random();
 
-                // 核心欄位提取
-                const id = getV('rps27') || getV('rps31') || getV('編號') || Math.random().toString();
-                const dist = getV('district') || getV('鄉鎮市區');
-                const pricePerPing = parseFloat(getV('rps22')) || 0;
-                const dateRaw = getV('rps07') || getV('交易年月');
+                if (!district || !dateRaw || price_m2 <= 0) return;
 
-                if (!dist || !dateRaw || pricePerPing <= 0) return;
-
-                const dateClean = String(dateRaw).substring(0, 5);
+                const dateStr = String(dateRaw).substring(0, 5); // 11305
+                const price_ping = (price_m2 / 0.3025) / 10000;
+                
                 let name = "";
                 if (type === 'presale') {
-                    name = getV('rps28') || "未知預售案";
+                    name = row['rps28'] || "預售建案";
                 } else {
-                    const addr = getV('rps02') || getV('土地區段位置') || "";
+                    const addr = row['rps02'] || row['土地區段位置'] || "";
                     name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 10);
                 }
 
-                const roomVal = parseInt(getV('rps16')) || 0;
-                const buildDate = String(getV('rps14') || "0");
-                const age = type === 'presale' ? 0 : Math.max(0, parseInt(dateRaw.substring(0, 3)) - parseInt(buildDate.substring(0, 3)));
+                const rooms = parseInt(row['rps16']) || parseInt(row['rps16_quantity']) || 0;
+                const buildD = String(row['rps14'] || row['rps14_yyymmddroc'] || "0");
+                const age = type === 'presale' ? 0 : Math.max(0, parseInt(dateRaw.toString().substring(0, 3)) - parseInt(buildD.substring(0, 3)));
 
-                // 存入 IndexedDB，若 ID 重複會自動覆蓋（達到去重效果）
                 store.put({
-                    id, dist: dist.trim(), name: name.trim(), age,
-                    price: (pricePerPing / 0.3025) / 10000,
-                    date: dateClean,
-                    room: roomVal >= 4 ? "4房以上" : roomVal + "房"
+                    id, district: district.trim(), name: name.trim(), 
+                    price: price_ping, date: dateStr, age,
+                    room: rooms >= 4 ? "4房以上" : rooms + "房"
                 });
                 count++;
             });
 
-            document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '🏠 預售' : '🏢 中古'}：已讀取 ${count} 筆交易 (去重後)`;
+            log(type === 'presale' ? 'pre' : 'res', `解析完成：共 ${count} 筆交易。`);
             return new Promise(r => tx.oncomplete = r);
         }
 
-        async function loadAndRefresh() {
-            MEMORY.presale = await getAllFromStore("presale");
-            MEMORY.resale = await getAllFromStore("resale");
-            refreshUI();
+        async function loadData() {
+            MEMORY.presale = await getAll('presale');
+            MEMORY.resale = await getAll('resale');
+            document.getElementById('preCount').innerText = `DB: ${MEMORY.presale.length}`;
+            document.getElementById('resCount').innerText = `DB: ${MEMORY.resale.length}`;
+            initFilters();
         }
 
-        function getAllFromStore(s) {
+        function getAll(storeName) {
             return new Promise(r => {
-                const tx = db.transaction(s, "readonly");
-                const req = tx.objectStore(s).getAll();
+                const req = db.transaction(storeName, "readonly").objectStore(storeName).getAll();
                 req.onsuccess = () => r(req.result);
             });
         }
 
-        function refreshUI() {
-            const data = MEMORY[CURRENT_TAB];
-            if (data.length === 0) return;
-
-            const dists = [...new Set(data.map(d => d.dist))].sort();
+        function initFilters() {
+            const data = MEMORY[CURRENT_MODE];
+            if (!data.length) return;
+            const dists = [...new Set(data.map(d => d.district))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
             
             document.getElementById('fDist').innerHTML = '<option value="all">全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fStart').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fEnd').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
-
-            // 保持上次選取的狀態
-            document.getElementById('fDist').value = STATES[CURRENT_TAB].dist;
-            document.getElementById('fStart').value = STATES[CURRENT_TAB].start || dates[0];
-            document.getElementById('fEnd').value = STATES[CURRENT_TAB].end || dates[dates.length-1];
-            runFilter();
+            document.getElementById('fEnd').value = dates[dates.length - 1];
+            
+            updateFilters();
         }
 
-        function runFilter() {
-            const data = MEMORY[CURRENT_TAB];
-            const s = STATES[CURRENT_TAB];
+        function updateFilters() {
+            const data = MEMORY[CURRENT_MODE];
+            const fDist = document.getElementById('fDist').value;
+            const fRoom = document.getElementById('fRoom').value;
+            const fAge = document.getElementById('fAge').value;
+            const fStart = document.getElementById('fStart').value;
+            const fEnd = document.getElementById('fEnd').value;
+
             const filtered = data.filter(d => {
-                const mDist = s.dist === 'all' || d.dist === s.dist;
-                const mRoom = s.room === 'all' || d.room === s.room;
-                const mDate = d.date >= (s.start || "0") && d.date <= (s.end || "99999");
+                const mDist = fDist === 'all' || d.district === fDist;
+                const mRoom = fRoom === 'all' || d.room === fRoom;
+                const mDate = d.date >= fStart && d.date <= fEnd;
                 let mAge = true;
-                if (CURRENT_TAB === 'resale' && s.age !== 'all') {
-                    if (s.age === '0-5') mAge = d.age <= 5;
-                    else if (s.age === '5-10') mAge = d.age > 5 && d.age <= 10;
-                    else if (s.age === '10-20') mAge = d.age > 10 && d.age <= 20;
-                    else if (s.age === '20+') mAge = d.age > 20;
+                if (CURRENT_MODE === 'resale' && fAge !== 'all') {
+                    if (fAge === '0-5') mAge = d.age <= 5;
+                    else if (fAge === '5-10') mAge = d.age > 5 && d.age <= 10;
+                    else if (fAge === '10-20') mAge = d.age > 10 && d.age <= 20;
+                    else if (fAge === '20+') mAge = d.age > 20;
                 }
                 return mDist && mRoom && mDate && mAge;
             });
-            renderChartsAndLists(filtered);
+
+            render(filtered);
         }
 
-        function renderChartsAndLists(data) {
+        function render(data) {
             const dates = [...new Set(data.map(d => d.date))].sort();
-            const color = CURRENT_TAB === 'presale' ? '#4f46e5' : '#1e293b';
+            const color = CURRENT_MODE === 'presale' ? '#4f46e5' : '#1e293b';
 
-            updateChart('chartPrice', 'line', dates, [{
-                label: '均價(萬)', borderColor: color, tension: 0.3, pointRadius: 4,
-                data: dates.map(d => {
-                    const items = data.filter(i => i.date === d);
-                    return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
-                })
-            }]);
+            // 圖表渲染
+            updateChart('chartVol', 'bar', dates, [{ label: '成交量', data: dates.map(t => data.filter(d => d.date === t).length), backgroundColor: color, borderRadius: 4 }]);
+            updateChart('chartPrice', 'line', dates, [{ label: '均價', data: dates.map(t => {
+                const items = data.filter(d => d.date === t);
+                return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
+            }), borderColor: color, tension: 0.3, fill: false }]);
 
-            updateChart('chartVol', 'bar', dates, [{
-                label: '成交量', backgroundColor: color, borderRadius: 5,
-                data: dates.map(d => data.filter(i => i.date === d).length)
-            }]);
-
-            const dStats = {};
-            data.forEach(d => { if(!dStats[d.dist]) dStats[d.dist]={s:0,c:0}; dStats[d.dist].s+=d.price; dStats[d.dist].c++; });
+            // 排行榜
+            const distMap = {};
+            data.forEach(d => { if(!distMap[d.district]) distMap[d.district]={s:0,c:0}; distMap[d.district].s+=d.price; distMap[d.district].c++; });
             
-            renderList('rankDistPrice', Object.entries(dStats).map(([k,v])=>({n:k, v:(v.s/v.c).toFixed(1)})).sort((a,b)=>b.v-a.v).slice(0,5), '萬');
-            renderList('rankDistVol', Object.entries(dStats).map(([k,v])=>({n:k, v:v.c})).sort((a,b)=>b.v-a.v).slice(0,5), '件');
-            renderList('rankItemPrice', [...data].sort((a,b)=>b.price-a.price).slice(0,5).map(d=>({n:d.name, v:d.price.toFixed(1)})), '萬');
+            showList('rankPrice', Object.entries(distMap).map(([k,v])=>( {n:k, v:(v.s/v.c).toFixed(1)} )).sort((a,b)=>b.v-a.v).slice(0,5), '萬');
+            showList('rankVol', Object.entries(distMap).map(([k,v])=>( {n:k, v:v.c} )).sort((a,b)=>b.v-a.v).slice(0,5), '件');
+            showList('rankTop', [...data].sort((a,b)=>b.price-a.price).slice(0,5).map(d=>({n:d.name, v:d.price.toFixed(1)})), '萬');
             
-            const hot = {}; data.forEach(d => hot[d.name] = (hot[d.name]||0)+1);
-            renderList('rankItemHot', Object.entries(hot).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,5), '戶');
+            const hotMap = {}; data.forEach(d => hotMap[d.name] = (hotMap[d.name]||0)+1);
+            showList('rankHot', Object.entries(hotMap).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,5), '戶');
+        }
+
+        function switchTab(mode) {
+            CURRENT_MODE = mode;
+            document.getElementById('tab-presale').classList.toggle('active', mode === 'presale');
+            document.getElementById('tab-resale').classList.toggle('active', mode === 'resale');
+            document.getElementById('ageBox').style.display = mode === 'presale' ? 'none' : 'block';
+            initFilters();
         }
 
         function updateChart(id, type, labels, datasets) {
-            if (chartInstances[id]) chartInstances[id].destroy();
-            chartInstances[id] = new Chart(document.getElementById(id), {
-                type, data: { labels, datasets },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            if (charts[id]) charts[id].destroy();
+            charts[id] = new Chart(document.getElementById(id), { type, data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
         }
 
-        function renderList(id, list, unit) {
+        function showList(id, list, unit) {
             document.getElementById(id).innerHTML = list.map((d, i) => `
-                <div class="flex justify-between text-[11px] items-center border-b border-slate-50 pb-1">
-                    <span class="truncate font-bold text-slate-600 w-2/3">${i+1}. ${d.n}</span>
-                    <span class="font-black text-slate-900">${d.v} <span class="text-[9px] text-slate-400 font-normal">${unit}</span></span>
+                <div class="flex justify-between items-center text-[11px] border-b border-slate-50 pb-1">
+                    <span class="truncate w-32 font-bold text-slate-600">${i+1}. ${d.n}</span>
+                    <span class="font-black text-slate-900">${d.v}${unit}</span>
                 </div>
             `).join('');
         }
 
-        function changeTab(t) { 
-            CURRENT_TAB = t; 
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.id === `btn-${t}`));
-            document.getElementById('ageGroup').style.opacity = t === 'presale' ? '0.3' : '1';
-            refreshUI(); 
-        }
-        function saveState(k, v) { STATES[CURRENT_TAB][k] = v; runFilter(); }
-        function updateSyncUI(t) { document.getElementById('syncText').innerText = t; }
+        function log(type, msg) { document.getElementById(`${type}Log`).innerText = `[${new Date().toLocaleTimeString()}] ${msg}`; }
+        function copyData() { alert("報表數據已準備好（開發中），您可以先截圖使用！"); }
     </script>
 </body>
 </html>
