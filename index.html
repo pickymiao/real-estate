@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v28.9 - 全面解鎖版</title>
+    <title>ESTATE PRO v30.0 - 自動去重版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -11,7 +11,7 @@
         body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #0f172a; }
         .tab-btn.active { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: 800; }
         .card { background: white; border-radius: 1.25rem; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .status-pill { padding: 2px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .status-pill { padding: 2px 10px; border-radius: 99px; font-size: 10px; font-weight: bold; }
         select { background: #fff; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.6rem; font-size: 0.8rem; width: 100%; outline: none; }
     </style>
 </head>
@@ -19,45 +19,39 @@
 
     <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.9</span></h1>
-            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">No-Filter Mode & Direct Mapping</p>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v30.0</span></h1>
+            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Auto-Sync & Smart De-duplication</p>
         </div>
         
         <div class="flex gap-4 items-center">
-            <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500"><span id="syncText">等待中...</span></div>
+            <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500 font-mono">系統狀態：<span id="syncText">初始化...</span></div>
             
-            <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏠 上傳預售</button>
-                <div id="preInfo" class="status-pill bg-indigo-50 text-indigo-600 mt-2 text-[9px]">DB: 0</div>
-            </div>
-            <div class="flex flex-col items-center">
-                <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md">🏢 上傳中古</button>
-                <div id="resInfo" class="status-pill bg-slate-100 text-slate-600 mt-2 text-[9px]">DB: 0</div>
-            </div>
+            <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold text-xs">🏠 更新預售</button>
+            <button onclick="document.getElementById('resInput').click()" class="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-xs">🏢 更新中古</button>
+            
             <input type="file" id="preInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'presale')">
             <input type="file" id="resInput" class="hidden" accept=".csv" onchange="handleManualUpload(this.files, 'resale')">
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[10px] text-emerald-800 font-mono">
-        <div class="font-bold mb-1">✅ 解鎖版診斷：目前已關閉「非住宅」攔截器，強制讀入所有有價格的資料。</div>
-        <div id="presaleLog">等待操作...</div>
-        <div id="resaleLog">等待操作...</div>
+    <div class="max-w-7xl mx-auto mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="presaleLog" class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-[10px] text-indigo-800 font-mono">預售資料庫：檢索中...</div>
+        <div id="resaleLog" class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10px] text-slate-800 font-mono">中古資料庫：檢索中...</div>
     </div>
 
     <div class="max-w-7xl mx-auto flex gap-10 border-b-2 border-slate-200 mb-6">
-        <button id="btn-presale" onclick="changeTab('presale')" class="tab-btn active py-4 text-xs font-bold uppercase tracking-widest">Presale / 預售屋</button>
-        <button id="btn-resale" onclick="changeTab('resale')" class="tab-btn py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Resale / 中古屋</button>
+        <button id="btn-presale" onclick="changeTab('presale')" class="tab-btn active py-4 text-xs font-bold uppercase">Presale / 預售屋</button>
+        <button id="btn-resale" onclick="changeTab('resale')" class="tab-btn py-4 text-xs font-bold text-slate-400 uppercase">Resale / 中古屋</button>
     </div>
 
     <main class="max-w-7xl mx-auto">
         <div class="card mb-8 grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400">區域</label><select id="fDist" onchange="saveState('dist', this.value)"></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400">房型</label><select id="fRoom" onchange="saveState('room', this.value)"><option value="all">全部</option><option value="1房">1房</option><option value="2房">2房</option><option value="3房">3房</option><option value="4房以上">4房以上</option></select></div>
-            <div id="ageGroup" class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400">屋齡</label><select id="fAge" onchange="saveState('age', this.value)"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400">起始</label><select id="fStart" onchange="saveState('start', this.value)"></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400">結束</label><select id="fEnd" onchange="saveState('end', this.value)"></select></div>
-            <div class="flex items-end"><button onclick="copyRichData()" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-[10px] font-bold">📋 複製數據</button></div>
+            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">District 區域</label><select id="fDist" onchange="saveState('dist', this.value)"></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">Room 房型</label><select id="fRoom" onchange="saveState('room', this.value)"><option value="all">全部</option><option value="1房">1房</option><option value="2房">2房</option><option value="3房">3房</option><option value="4房以上">4房以上</option></select></div>
+            <div id="ageGroup" class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">Age 屋齡</label><select id="fAge" onchange="saveState('age', this.value)"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">From 起始</label><select id="fStart" onchange="saveState('start', this.value)"></select></div>
+            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">To 結束</label><select id="fEnd" onchange="saveState('end', this.value)"></select></div>
+            <div class="flex items-end"><button onclick="copyRichData()" class="w-full bg-indigo-50 text-indigo-600 border border-indigo-200 py-2.5 rounded-xl text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-all">📋 複製數據</button></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -66,10 +60,10 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="card"><h4 class="text-[10px] font-black mb-4">區域均價</h4><div id="rankDistPrice" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4">成交量</h4><div id="rankDistVol" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4">最高單價</h4><div id="rankItemPrice" class="space-y-3"></div></div>
-            <div class="card"><h4 class="text-[10px] font-black mb-4">熱門案件</h4><div id="rankItemHot" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Avg. Price 區域均價</h4><div id="rankDistPrice" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Volume 成交量</h4><div id="rankDistVol" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Top Unit 最高單價</h4><div id="rankItemPrice" class="space-y-3"></div></div>
+            <div class="card"><h4 class="text-[10px] font-black mb-4 uppercase tracking-wider text-slate-400">Hot Project 熱門案件</h4><div id="rankItemHot" class="space-y-3"></div></div>
         </div>
     </main>
 
@@ -88,111 +82,115 @@
         let CURRENT_TAB = 'presale';
         let chartInstances = {};
 
-        // ⚠️ 再次升級版本號至 v30，確保乾淨開局
-        const dbReq = indexedDB.open("EstateDB_v30", 1);
+        // 使用新 DB 版本，確保邏輯乾淨
+        const dbReq = indexedDB.open("EstateMaster_v1", 1);
         dbReq.onupgradeneeded = (e) => {
             let _db = e.target.result;
-            if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
-            if(!_db.objectStoreNames.contains("resale")) _db.createObjectStore("resale", { keyPath: "uid" });
+            // 以「交易編號」作為唯一 Key，防止重複
+            _db.createObjectStore("presale", { keyPath: "id" });
+            _db.createObjectStore("resale", { keyPath: "id" });
         };
-        dbReq.onsuccess = (e) => { db = e.target.result; init(); };
+        dbReq.onsuccess = (e) => { db = e.target.result; startup(); };
 
-        async function init() {
-            await loadFromDB();
-            updateSyncUI('同步中...');
-            await sync(CLOUD.presale, 'presale');
-            await sync(CLOUD.resale, 'resale');
+        async function startup() {
+            updateSyncUI('自動同步中...');
+            // 優先從 GitHub 讀取
+            await Promise.all([
+                syncCloud(CLOUD.presale, 'presale'),
+                syncCloud(CLOUD.resale, 'resale')
+            ]);
             updateSyncUI('同步完成');
+            await loadAndRefresh();
         }
 
-        async function sync(url, type) {
+        async function syncCloud(url, type) {
             try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error("Github 連結失效");
+                if (!res.ok) throw new Error("Fetch Failed");
                 const buffer = await res.arrayBuffer();
-                const text = await decodeBuffer(buffer);
-                await process(text, type);
-            } catch (e) { 
-                document.getElementById(`${type}Log`).innerText = `無法載入 Github 檔案，請點擊按鈕手動上傳。`;
+                const text = await smartDecode(buffer);
+                await processCSV(text, type);
+            } catch (e) {
+                document.getElementById(`${type}Log`).innerText = `⚠️ 雲端讀取失敗，請使用手動更新。`;
             }
         }
 
-        async function handleManualUpload(files, type) { 
-            const buffer = await files[0].arrayBuffer(); 
-            const text = await decodeBuffer(buffer);
-            await process(text, type); 
+        async function handleManualUpload(files, type) {
+            updateSyncUI('手動處理中...');
+            const buffer = await files[0].arrayBuffer();
+            const text = await smartDecode(buffer);
+            await processCSV(text, type);
+            updateSyncUI('更新完成');
+            await loadAndRefresh();
         }
 
-        async function decodeBuffer(buffer) {
+        async function smartDecode(buffer) {
+            // 嘗試 UTF-8
             let text = new TextDecoder('utf-8').decode(buffer);
-            if (text.includes('')) text = new TextDecoder('big5').decode(buffer);
+            // 如果沒看到關鍵欄位或出現怪字元，嘗試 Big5
+            if (!text.includes('district') && !text.includes('鄉鎮市區')) {
+                text = new TextDecoder('big5').decode(buffer);
+            }
             return text.trim().replace(/^\uFEFF/, '');
         }
 
-        async function process(csvText, type) {
+        async function processCSV(csvText, type) {
             const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true, transformHeader: h => h.trim() });
             if (parsed.data.length === 0) return;
 
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
-            let saved = 0;
+            let count = 0;
 
             parsed.data.forEach(row => {
                 const keys = Object.keys(row);
-                // 強化尋找欄位的邏輯
-                const findValue = (k) => {
-                    const foundKey = keys.find(x => x.toLowerCase().includes(k.toLowerCase()));
-                    return foundKey ? row[foundKey] : null;
+                const getV = (k) => {
+                    const f = keys.find(x => x.toLowerCase().includes(k.toLowerCase()));
+                    return f ? row[f] : null;
                 };
 
-                const dist = findValue('district') || findValue('鄉鎮市區');
-                const pricePerPing = parseFloat(findValue('rps22')) || 0; // 單價(元/平方公尺)
-                const dateRaw = findValue('rps07') || findValue('交易年月');
+                // 核心欄位提取
+                const id = getV('rps27') || getV('rps31') || getV('編號') || Math.random().toString();
+                const dist = getV('district') || getV('鄉鎮市區');
+                const pricePerPing = parseFloat(getV('rps22')) || 0;
+                const dateRaw = getV('rps07') || getV('交易年月');
 
-                // 基本門檻：必須有區域、日期、價格
                 if (!dist || !dateRaw || pricePerPing <= 0) return;
 
-                const dateClean = String(dateRaw).substring(0, 5); // 取 11301 這種格式
-                
-                // 名稱判斷
+                const dateClean = String(dateRaw).substring(0, 5);
                 let name = "";
                 if (type === 'presale') {
-                    name = findValue('rps28') || "未知案名";
+                    name = getV('rps28') || "未知預售案";
                 } else {
-                    const sec = findValue('rps02') || "";
-                    name = sec.split(/[樓室之]/)[0].replace("新北市", "").trim().substring(0, 10);
+                    const addr = getV('rps02') || getV('土地區段位置') || "";
+                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 10);
                 }
 
-                const roomVal = parseInt(findValue('rps16')) || 0;
-                const buildDate = String(findValue('rps14') || "0");
+                const roomVal = parseInt(getV('rps16')) || 0;
+                const buildDate = String(getV('rps14') || "0");
                 const age = type === 'presale' ? 0 : Math.max(0, parseInt(dateRaw.substring(0, 3)) - parseInt(buildDate.substring(0, 3)));
 
+                // 存入 IndexedDB，若 ID 重複會自動覆蓋（達到去重效果）
                 store.put({
-                    uid: `${dist}_${dateRaw}_${pricePerPing}_${Math.random()}`,
-                    dist: dist.trim(), 
-                    name: name.trim(), 
-                    age,
-                    price: (pricePerPing / 0.3025) / 10000, // 換算成萬/坪
+                    id, dist: dist.trim(), name: name.trim(), age,
+                    price: (pricePerPing / 0.3025) / 10000,
                     date: dateClean,
                     room: roomVal >= 4 ? "4房以上" : roomVal + "房"
                 });
-                saved++;
+                count++;
             });
 
-            document.getElementById(`${type}Log`).innerText = `成功存入 ${saved} 筆資料到本地資料庫！`;
-
-            return new Promise(r => { tx.oncomplete = async () => { await loadFromDB(); r(); }; });
+            document.getElementById(`${type}Log`).innerText = `${type === 'presale' ? '🏠 預售' : '🏢 中古'}：已讀取 ${count} 筆交易 (去重後)`;
+            return new Promise(r => tx.oncomplete = r);
         }
 
-        async function loadFromDB() {
-            MEMORY.presale = await getAll("presale");
-            MEMORY.resale = await getAll("resale");
-            document.getElementById('preInfo').innerText = `DB: ${MEMORY.presale.length}`;
-            document.getElementById('resInfo').innerText = `DB: ${MEMORY.resale.length}`;
+        async function loadAndRefresh() {
+            MEMORY.presale = await getAllFromStore("presale");
+            MEMORY.resale = await getAllFromStore("resale");
             refreshUI();
         }
 
-        function getAll(s) {
+        function getAllFromStore(s) {
             return new Promise(r => {
                 const tx = db.transaction(s, "readonly");
                 const req = tx.objectStore(s).getAll();
@@ -211,6 +209,7 @@
             document.getElementById('fStart').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fEnd').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
 
+            // 保持上次選取的狀態
             document.getElementById('fDist').value = STATES[CURRENT_TAB].dist;
             document.getElementById('fStart').value = STATES[CURRENT_TAB].start || dates[0];
             document.getElementById('fEnd').value = STATES[CURRENT_TAB].end || dates[dates.length-1];
@@ -233,15 +232,15 @@
                 }
                 return mDist && mRoom && mDate && mAge;
             });
-            render(filtered);
+            renderChartsAndLists(filtered);
         }
 
-        function render(data) {
+        function renderChartsAndLists(data) {
             const dates = [...new Set(data.map(d => d.date))].sort();
             const color = CURRENT_TAB === 'presale' ? '#4f46e5' : '#1e293b';
 
             updateChart('chartPrice', 'line', dates, [{
-                label: '均價(萬)', borderColor: color, tension: 0.3,
+                label: '均價(萬)', borderColor: color, tension: 0.3, pointRadius: 4,
                 data: dates.map(d => {
                     const items = data.filter(i => i.date === d);
                     return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
@@ -249,7 +248,7 @@
             }]);
 
             updateChart('chartVol', 'bar', dates, [{
-                label: '件數', backgroundColor: color,
+                label: '成交量', backgroundColor: color, borderRadius: 5,
                 data: dates.map(d => data.filter(i => i.date === d).length)
             }]);
 
@@ -274,9 +273,9 @@
 
         function renderList(id, list, unit) {
             document.getElementById(id).innerHTML = list.map((d, i) => `
-                <div class="flex justify-between text-[11px]">
-                    <span class="truncate font-bold text-slate-600">${i+1}. ${d.n}</span>
-                    <span class="font-black text-slate-900">${d.v}${unit}</span>
+                <div class="flex justify-between text-[11px] items-center border-b border-slate-50 pb-1">
+                    <span class="truncate font-bold text-slate-600 w-2/3">${i+1}. ${d.n}</span>
+                    <span class="font-black text-slate-900">${d.v} <span class="text-[9px] text-slate-400 font-normal">${unit}</span></span>
                 </div>
             `).join('');
         }
