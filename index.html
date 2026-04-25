@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v28.2 - 全相容同步引擎</title>
+    <title>ESTATE PRO v28.3 - 強制修復版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -22,15 +22,15 @@
 
     <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.2</span></h1>
-            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Auto-Syncing with GitHub Data Source</p>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.3</span></h1>
+            <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Cleaned Data & Auto-Syncing</p>
         </div>
         
         <div class="flex gap-4 items-center">
             <div id="syncStatus" class="status-pill bg-slate-100 text-slate-500">
                 <span id="syncIcon">☁️</span> <span id="syncText">雲端同步中...</span>
             </div>
-            <button onclick="clearFullDatabase()" class="text-[10px] text-red-400 font-bold hover:text-red-600 transition-all">🗑️ 清空資料</button>
+            <button onclick="clearFullDatabase()" class="text-[10px] text-red-400 font-bold hover:text-red-600 transition-all">🗑️ 清空舊資料</button>
             
             <div class="flex flex-col items-center">
                 <button onclick="document.getElementById('preInput').click()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all">🏠 上傳預售</button>
@@ -75,8 +75,8 @@
 
     <script>
         const GITHUB_CONFIG = {
-            presale_url: "https://github.com/pickymiao/real-estate/raw/refs/heads/main/presale.csv", 
-            resale_url: "https://github.com/pickymiao/real-estate/raw/refs/heads/main/resale.csv",
+            presale_url: "https://raw.githubusercontent.com/pickymiao/real-estate/main/presale.csv", 
+            resale_url: "https://raw.githubusercontent.com/pickymiao/real-estate/main/resale.csv",
             auto_sync: true 
         };
 
@@ -116,11 +116,8 @@
 
         async function syncFromCloud(type, url) {
             if (!url) return;
-            let stableUrl = url.replace("github.com", "raw.githubusercontent.com")
-                               .replace("/raw/refs/heads/", "/")
-                               .replace("/blob/", "/");
             try {
-                const response = await fetch(stableUrl);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error();
                 const csvText = await response.text();
                 await processCsvData(csvText, type);
@@ -128,22 +125,24 @@
         }
 
         async function processCsvData(csvText, type) {
-            const res = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+            // 修正點 1: 強制清除 BOM 字元，確保欄位名稱乾淨
+            const cleanText = csvText.trim().replace(/^\uFEFF/, '');
+            const res = Papa.parse(cleanText, { header: true, skipEmptyLines: true });
+            
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
             
             res.data.forEach(row => {
-                // 精確適配你的 CSV 欄位
-                const use = type === 'presale' ? row.rps12 : row.main_use;
-                if (use !== "住家用") return;
+                // 修正點 2: 放寬對「住家用」的判讀，只要包含「住」字就進來
+                const use = type === 'presale' ? (row.rps12 || "") : (row.main_use || "");
+                if (!use.includes("住")) return;
 
-                const dist = row.district;
+                const dist = row.district || row.district; // 容錯
                 const priceRaw = parseFloat(row.rps22_amountsunitdollars) || 0;
                 let dateRaw = type === 'presale' ? row.rps07 : row.rps07_yyymmddroc;
                 
                 if (!dist || !dateRaw || priceRaw <= 0) return;
 
-                // 日期格式校正：確保統一為 11305 格式
                 const dateClean = String(dateRaw).substring(0, 5); 
                 const name = type === 'presale' ? (row.build_name || "未知建案") : (row.address || "").split(/[樓室之]/)[0].replace(/\s/g, '');
                 const age = type === 'presale' ? 0 : calculateAge(dateRaw, row.rps14_yyymmddroc);
@@ -165,7 +164,6 @@
             });
         }
 
-        // 其餘 UI 邏輯保持不變...
         async function handleManualUpload(files, type) {
             const text = await files[0].text();
             await processCsvData(text, type);
@@ -174,7 +172,9 @@
 
         function calculateAge(t, b) {
             if (!b) return 0;
-            return Math.max(0, parseInt(String(t).substring(0, 3)) - parseInt(String(b).substring(0, 3)));
+            const tYear = parseInt(String(t).substring(0, 3));
+            const bYear = parseInt(String(b).substring(0, 3));
+            return Math.max(0, tYear - bYear);
         }
 
         async function loadDataFromDB() {
@@ -226,7 +226,12 @@
             const state = STATES[CURRENT_TAB];
             const dists = [...new Set(data.map(d => d.dist))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
-            if (dates.length === 0) return;
+            
+            if (dates.length === 0) {
+                // 如果沒有資料，清空選單
+                document.getElementById('fDist').innerHTML = '<option value="all">無資料</option>';
+                return;
+            }
 
             document.getElementById('fDist').innerHTML = '<option value="all">全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fStart').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
@@ -263,10 +268,13 @@
         function renderDashboard(data) {
             const dates = [...new Set(data.map(d => d.date))].sort();
             const themeColor = CURRENT_TAB === 'presale' ? '#4f46e5' : '#1e293b';
+            
+            // 修正點 3: 即使沒有過濾後的資料也顯示空白圖表，不報錯
             const monthlyHigh = dates.map(d => {
                 const items = data.filter(i => i.date === d);
                 return items.length ? items.reduce((a, b) => (a.price > b.price ? a : b)) : null;
             });
+            
             drawChart('chartPrice', 'line', dates, [{
                 label: '平均單價',
                 data: dates.map(d => {
@@ -275,9 +283,11 @@
                 }),
                 borderColor: themeColor, tension: 0.3
             }], monthlyHigh);
+            
             drawChart('chartVol', 'bar', dates, [{
                 label: '成交件數', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: themeColor
             }]);
+            
             const dStats = {};
             data.forEach(d => { if(!dStats[d.dist]) dStats[d.dist]={s:0,c:0}; dStats[d.dist].s+=d.price; dStats[d.dist].c++; });
             renderUIList('rankDistPrice', Object.entries(dStats).map(([k,v])=>({n:k, v:(v.s/v.c).toFixed(1)})).sort((a,b)=>b.v-a.v).slice(0,5), 'bg-emerald-100 text-emerald-700', '萬');
@@ -304,7 +314,7 @@
         }
 
         function renderUIList(id, list, color, unit, showAge = false) {
-            document.getElementById(id).innerHTML = list.map((d, i) => `
+            document.getElementById(id).innerHTML = list.length ? list.map((d, i) => `
                 <div class="flex justify-between items-center text-[11px]">
                     <div class="flex items-center gap-2 overflow-hidden">
                         <span class="rank-tag ${color}">${i+1}</span>
@@ -312,11 +322,11 @@
                     </div>
                     <span class="font-black text-slate-900 ml-2">${d.v}${unit}</span>
                 </div>
-            `).join('');
+            `).join('') : '<p class="text-slate-300 text-[10px]">無資料</p>';
         }
 
         function clearFullDatabase() {
-            if (confirm("永久刪除所有存儲資料？")) {
+            if (confirm("這將清除所有已存儲的資料，並重新從雲端抓取。確定嗎？")) {
                 db.transaction("presale", "readwrite").objectStore("presale").clear();
                 db.transaction("resale", "readwrite").objectStore("resale").clear();
                 location.reload();
