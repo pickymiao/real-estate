@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v28.1 - 雲端自動同步引擎</title>
+    <title>ESTATE PRO v28.2 - 全相容同步引擎</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -22,7 +22,7 @@
 
     <header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.1</span></h1>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">ESTATE ENGINE <span class="text-indigo-600">v28.2</span></h1>
             <p class="text-slate-400 font-bold mt-2 text-[10px] tracking-widest uppercase">Auto-Syncing with GitHub Data Source</p>
         </div>
         
@@ -74,9 +74,6 @@
     </main>
 
     <script>
-        // ==========================================
-        // GitHub 自動同步網址（已更新為你的連結）
-        // ==========================================
         const GITHUB_CONFIG = {
             presale_url: "https://github.com/pickymiao/real-estate/raw/refs/heads/main/presale.csv", 
             resale_url: "https://github.com/pickymiao/real-estate/raw/refs/heads/main/resale.csv",
@@ -118,16 +115,10 @@
         }
 
         async function syncFromCloud(type, url) {
-            if (!url || url.includes("你的")) return;
-            
-            // 穩定轉換邏輯：自動將一般連結轉為 Raw 讀取連結
-            let stableUrl = url;
-            if (url.includes("github.com") && !url.includes("raw.githubusercontent")) {
-                stableUrl = url.replace("github.com", "raw.githubusercontent.com")
+            if (!url) return;
+            let stableUrl = url.replace("github.com", "raw.githubusercontent.com")
                                .replace("/raw/refs/heads/", "/")
                                .replace("/blob/", "/");
-            }
-
             try {
                 const response = await fetch(stableUrl);
                 if (!response.ok) throw new Error();
@@ -142,21 +133,27 @@
             const store = tx.objectStore(type);
             
             res.data.forEach(row => {
-                if (row.rps12 !== "住家用") return;
+                // 精確適配你的 CSV 欄位
+                const use = type === 'presale' ? row.rps12 : row.main_use;
+                if (use !== "住家用") return;
+
                 const dist = row.district;
                 const priceRaw = parseFloat(row.rps22_amountsunitdollars) || 0;
                 let dateRaw = type === 'presale' ? row.rps07 : row.rps07_yyymmddroc;
+                
                 if (!dist || !dateRaw || priceRaw <= 0) return;
 
+                // 日期格式校正：確保統一為 11305 格式
+                const dateClean = String(dateRaw).substring(0, 5); 
+                const name = type === 'presale' ? (row.build_name || "未知建案") : (row.address || "").split(/[樓室之]/)[0].replace(/\s/g, '');
                 const age = type === 'presale' ? 0 : calculateAge(dateRaw, row.rps14_yyymmddroc);
-                const name = type === 'presale' ? (row.rps28 || "未知").trim() : (row.rps02 || "").split(/[樓室之]/)[0].replace(/\s/g, '');
                 const roomCount = parseInt(row.rps16_quantity) || 0;
-                const uid = `${dist}_${dateRaw}_${name}_${priceRaw}_${roomCount}`;
+                const uid = `${dist}_${dateClean}_${name}_${priceRaw}_${roomCount}`;
                 
                 store.put({
                     uid, dist, name, age,
                     price: (priceRaw / 0.3025) / 10000,
-                    date: String(dateRaw).substring(0, 5),
+                    date: dateClean,
                     room: roomCount >= 4 ? "4房以上" : roomCount + "房"
                 });
             });
@@ -168,10 +165,11 @@
             });
         }
 
+        // 其餘 UI 邏輯保持不變...
         async function handleManualUpload(files, type) {
             const text = await files[0].text();
             await processCsvData(text, type);
-            alert("手動上傳成功！已與資料庫合併。");
+            alert("手動上傳成功！");
         }
 
         function calculateAge(t, b) {
