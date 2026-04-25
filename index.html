@@ -2,97 +2,96 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v37.0 - 質感進階版</title>
+    <title>ESTATE PRO v38.0 - 純住家濾鏡版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700;900&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #334155; }
-        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
-        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 2px 10px rgba(79, 70, 229, 0.1); }
-        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 25%; width: 50%; height: 3px; background: #4f46e5; border-radius: 10px; }
-        .rank-item { background: linear-gradient(to right, #ffffff, #f8fafc); border-left: 4px solid #e2e8f0; transition: transform 0.2s; }
-        .rank-item:hover { transform: translateX(5px); border-left-color: #4f46e5; }
-        canvas { filter: drop-shadow(0 5px 15px rgba(0,0,0,0.02)); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+        .rank-item { background: white; border-left: 5px solid #e2e8f0; transition: all 0.2s; }
+        .rank-item:hover { transform: translateX(8px); border-left-color: #4f46e5; background: #f5f3ff; }
+        select { cursor: pointer; transition: all 0.2s; }
+        select:hover { background-color: #f8fafc; }
     </style>
 </head>
 <body class="p-4 md:p-10">
 
     <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div class="text-center md:text-left">
-            <h1 class="text-3xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600 italic">ENGINE</span> <span class="text-sm font-bold text-slate-400 align-top ml-1">v37.0</span></h1>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Real-time Real Estate Analytics</p>
+        <div>
+            <h1 class="text-4xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600">PRO</span> <span class="text-sm font-bold text-slate-400 align-top">v38.0</span></h1>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Residential Market Intelligence</p>
         </div>
         <div class="flex gap-3">
-            <button onclick="syncAll()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95 transition-all">🔄 雲端資料同步</button>
-            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all">📁 上傳檔案</button>
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-700 transition-all">🔄 同步雲端資料</button>
+            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-2xl font-bold text-sm shadow-sm">📁 上傳檔案</button>
             <input type="file" id="fileIn" class="hidden" multiple onchange="handleFiles(this.files)">
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="glass-card p-5 rounded-3xl">
-            <span class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">預售屋資料</span>
-            <div id="preCount" class="text-3xl font-black text-slate-800 my-1">0</div>
-            <div id="preLog" class="text-[10px] text-slate-400 font-medium truncate">Waiting...</div>
+    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="glass-card p-6 rounded-[2rem]">
+            <span class="text-[11px] font-black text-indigo-500 uppercase tracking-widest">預售屋 (住家)</span>
+            <div id="preCount" class="text-4xl font-black text-slate-800 my-2">0</div>
+            <div id="preLog" class="text-[11px] text-slate-400 font-medium truncate italic">Waiting...</div>
         </div>
-        <div class="glass-card p-5 rounded-3xl border-l-4 border-l-slate-400">
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">中古屋資料</span>
-            <div id="resCount" class="text-3xl font-black text-slate-800 my-1">0</div>
-            <div id="resLog" class="text-[10px] text-slate-400 font-medium truncate">Waiting...</div>
+        <div class="glass-card p-6 rounded-[2rem]">
+            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">中古屋 (住家)</span>
+            <div id="resCount" class="text-4xl font-black text-slate-800 my-2">0</div>
+            <div id="resLog" class="text-[11px] text-slate-400 font-medium truncate italic">Waiting...</div>
         </div>
-        <div class="hidden lg:block glass-card p-5 rounded-3xl bg-indigo-600 text-white border-none shadow-indigo-200">
-            <span class="text-[10px] font-black opacity-60 uppercase tracking-widest text-white">最後更新</span>
-            <div class="text-xl font-black mt-2" id="lastSyncTime">--:--:--</div>
+        <div class="hidden lg:block glass-card p-6 rounded-[2rem] bg-slate-900 text-white">
+            <span class="text-[11px] font-black opacity-60 uppercase">過濾狀態</span>
+            <div class="text-xl font-bold mt-3 text-emerald-400">✅ 已濾除土地/工業/辦公</div>
         </div>
-        <div class="hidden lg:block glass-card p-5 rounded-3xl">
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">目前模式</span>
-            <div class="text-xl font-black text-indigo-600 mt-2 uppercase" id="currentModeDisplay">Presale</div>
+        <div class="hidden lg:block glass-card p-6 rounded-[2rem]">
+            <span class="text-[11px] font-black text-slate-400 uppercase">最後同步</span>
+            <div class="text-xl font-black text-slate-700 mt-3" id="lastSyncTime">--:--</div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto flex mb-8 bg-slate-200/50 rounded-2xl p-1.5 gap-1">
-        <button id="tab-presale" onclick="switchMode('presale')" class="tab-btn active flex-1 py-4 text-sm font-black rounded-xl">🏠 預售市場 (NEW)</button>
-        <button id="tab-resale" onclick="switchMode('resale')" class="tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500">🏢 中古市場 (RESALE)</button>
+    <div class="max-w-7xl mx-auto flex mb-8 bg-slate-200/50 rounded-[1.5rem] p-1.5 gap-2">
+        <button id="tab-presale" onclick="switchMode('presale')" class="active flex-1 py-5 text-base font-black rounded-2xl transition-all">🏠 預售屋市場</button>
+        <button id="tab-resale" onclick="switchMode('resale')" class="flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all">🏢 中古屋市場</button>
     </div>
 
     <main class="max-w-7xl mx-auto">
-        <div class="glass-card mb-10 grid grid-cols-2 md:grid-cols-5 gap-6 items-end p-8 rounded-[2rem]">
-            <div class="flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all" onchange="run()"></select></div>
-            <div class="flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
-            <div class="col-span-2 flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">交易日期區間</label><div class="flex gap-2"><select id="fStart" class="w-1/2 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold" onchange="run()"></select><select id="fEnd" class="w-1/2 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold" onchange="run()"></select></div></div>
-            <button onclick="window.print()" class="bg-slate-900 text-white py-3.5 rounded-xl font-black text-sm shadow-xl shadow-slate-200 hover:bg-black transition-all">📋 導出分析報表</button>
+        <div class="glass-card mb-10 grid grid-cols-1 md:grid-cols-5 gap-8 items-end p-10 rounded-[2.5rem]">
+            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold focus:border-indigo-500 outline-none transition-all" onchange="run()"></select></div>
+            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold focus:border-indigo-500 outline-none" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
+            <div class="col-span-2 flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">交易日期範圍</label><div class="flex gap-3"><select id="fStart" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select><select id="fEnd" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select></div></div>
+            <button onclick="window.print()" class="bg-slate-900 text-white py-5 rounded-2xl font-black text-base shadow-2xl hover:bg-black active:scale-95 transition-all">📋 產出分析報表</button>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-            <div class="glass-card p-8 rounded-[2rem] h-[400px]">
-                <h3 class="text-sm font-black mb-6 flex items-center gap-2"><span class="w-2 h-2 bg-indigo-500 rounded-full"></span> 成交總量趨勢 (Volume)</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+            <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
+                <h3 class="text-lg font-black mb-8 flex items-center gap-3 italic">Market Volume <span class="text-xs font-normal text-slate-400">/ 成交件數</span></h3>
                 <div class="h-[300px]"><canvas id="chartVol"></canvas></div>
             </div>
-            <div class="glass-card p-8 rounded-[2rem] h-[400px]">
-                <h3 class="text-sm font-black mb-6 flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 市場價格走勢 (Price / 萬)</h3>
+            <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
+                <h3 class="text-lg font-black mb-8 flex items-center gap-3 italic">Price Trend <span class="text-xs font-normal text-slate-400">/ 均價 (萬/坪)</span></h3>
                 <div class="h-[300px]"><canvas id="chartPrice"></canvas></div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="stats">
-            <div class="glass-card p-6 rounded-3xl">
-                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">💎 區域均價排名</h4>
-                <div id="rankPrice" class="space-y-3"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8" id="stats">
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h4 class="text-xs font-black text-indigo-600 mb-6 border-b-2 border-indigo-50 pb-4 uppercase">💎 區域均價 Top 5</h4>
+                <div id="rankPrice" class="space-y-4"></div>
             </div>
-            <div class="glass-card p-6 rounded-3xl">
-                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">🔥 成交熱區</h4>
-                <div id="rankVol" class="space-y-3"></div>
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h4 class="text-xs font-black text-slate-500 mb-6 border-b-2 border-slate-50 pb-4 uppercase">🔥 熱門交易區域</h4>
+                <div id="rankVol" class="space-y-4"></div>
             </div>
-            <div class="glass-card p-6 rounded-3xl">
-                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">🏆 指標案件排行</h4>
-                <div id="rankTop" class="space-y-3"></div>
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h4 class="text-xs font-black text-emerald-600 mb-6 border-b-2 border-emerald-50 pb-4 uppercase">🏆 指標豪邸排名</h4>
+                <div id="rankTop" class="space-y-4"></div>
             </div>
-            <div class="glass-card p-6 rounded-3xl">
-                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">📈 交易頻次建案</h4>
-                <div id="rankHot" class="space-y-3"></div>
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h4 class="text-xs font-black text-amber-600 mb-6 border-b-2 border-amber-50 pb-4 uppercase">📊 成交頻次建案</h4>
+                <div id="rankHot" class="space-y-4"></div>
             </div>
         </div>
     </main>
@@ -104,7 +103,7 @@
         };
         let db, MEMORY = { presale: [], resale: [] }, MODE = 'presale', charts = {}, monthlyTops = {};
 
-        const req = indexedDB.open("EstateMaster_v45", 1);
+        const req = indexedDB.open("EstateMaster_v48", 1);
         req.onupgradeneeded = e => {
             let _db = e.target.result;
             if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
@@ -113,9 +112,9 @@
         req.onsuccess = e => { db = e.target.result; syncAll(); };
 
         async function syncAll() {
-            log('pre', '同步中...'); log('res', '同步中...');
+            log('pre', 'Syncing...'); log('res', 'Syncing...');
             await Promise.all([syncFile(CLOUD.presale, 'presale'), syncFile(CLOUD.resale, 'resale')]);
-            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString();
+            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             load();
         }
 
@@ -124,7 +123,7 @@
                 const res = await fetch(url + "?t=" + Date.now());
                 const buf = await res.arrayBuffer();
                 await process(buf, type);
-            } catch (e) { log(type==='presale'?'pre':'res', '連線失敗'); }
+            } catch (e) { log(type==='presale'?'pre':'res', '連線異常'); }
         }
 
         async function handleFiles(files) {
@@ -152,8 +151,19 @@
                     return key ? row[key] : null;
                 };
 
+                // 🚀 關鍵過濾邏輯：只針對住家型買賣
+                const usage = getV(['rps09', '建物用途']) || "";
+                const target = getV(['rps01', '交易標的']) || "";
+                
+                // 過濾條件：
+                // 1. 建物用途必須包含「住」字 (住家用, 住商用, 住工用...)
+                // 2. 排除純「土地」或純「車位」的買賣標的
+                const isResidential = usage.includes('住') || usage.includes('住宅') || usage.includes('國宅');
+                const isProperty = target.includes('房地');
+                
+                if (!isResidential || !isProperty) return;
+
                 const dist = getV(['district', '鄉鎮市區']);
-                // 🚀 關鍵價格邏輯：抓取單價欄位
                 const priceUnit = parseFloat(getV(['rps22', '單價', 'amountsunit'])) || 0;
                 const dateRaw = getV(['rps07', '交易年月', 'yyymmdd']);
                 const uid = getV(['rps27', 'rps31', '編號']) || (Math.random() + '');
@@ -161,7 +171,6 @@
                 if (!dist || !dateRaw || priceUnit <= 0) return;
 
                 const date = String(dateRaw).substring(0, 5);
-                // 🚀 單位轉換：(元/平方公尺) 轉為 (萬/坪)
                 const priceInWan = (priceUnit / 0.3025) / 10000;
                 
                 const r = parseInt(getV(['rps16'])) || 0;
@@ -170,10 +179,10 @@
                 
                 let name = "";
                 if (type === 'presale') {
-                    name = getV(['rps28', '建案名稱']) || "預售案";
+                    name = getV(['rps28', '建案名稱']) || "住家案";
                 } else {
                     const addr = getV(['rps02', '位置', '土地區段']) || "";
-                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 12);
+                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 15);
                 }
 
                 store.put({
@@ -228,7 +237,6 @@
             const dates = [...new Set(data.map(d => d.date))].sort();
             const color = MODE === 'presale' ? '#4f46e5' : '#64748b';
             
-            // 🚀 重新計算每月最高價指標案 (供 Hover 使用)
             monthlyTops = {};
             dates.forEach(d => {
                 const m = data.filter(i => i.date === d);
@@ -239,14 +247,14 @@
             });
 
             updateChart('chartPrice', 'line', dates, [{
-                label: '市場均價 (萬)', data: dates.map(d => {
+                label: '住家均價', data: dates.map(d => {
                     const items = data.filter(i => i.date === d);
                     return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
-                }), borderColor: color, borderWidth: 4, pointBackgroundColor: 'white', pointRadius: 5, fill: true, backgroundColor: color + '10'
+                }), borderColor: color, borderWidth: 5, pointBackgroundColor: 'white', pointRadius: 6, fill: true, backgroundColor: color + '15'
             }], true);
 
             updateChart('chartVol', 'bar', dates, [{
-                label: '成交量 (件)', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40', borderRadius: 8
+                label: '成交量', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40', borderRadius: 10
             }]);
 
             const dMap = {}; data.forEach(d => { if(!dMap[d.district]) dMap[d.district]={s:0,c:0}; dMap[d.district].s+=d.price; dMap[d.district].c++; });
@@ -263,44 +271,42 @@
                 type, data: { labels, datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            padding: 15,
-                            titleFont: { size: 14, weight: '900' },
-                            bodyFont: { size: 13 },
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            padding: 20,
+                            titleFont: { size: 16, weight: '900' },
+                            bodyFont: { size: 14 },
                             callbacks: {
                                 afterBody: (items) => {
                                     const t = monthlyTops[items[0].label];
-                                    return (tip && t) ? ['', `👑 指標建案：${t.name}`, `💰 最高單價：${t.price} 萬/坪`, `🏠 配置：${t.desc}`] : [];
+                                    return (tip && t) ? ['', `🏆 指標案：${t.name}`, `💰 單價：${t.price} 萬`, `🏠 配置：${t.desc}`] : [];
                                 }
                             }
                         }
                     },
-                    scales: { y: { grid: { borderDash: [5, 5] }, ticks: { font: { weight: 'bold' } } }, x: { grid: { display: false } } }
+                    scales: { y: { grid: { borderDash: [6, 6] }, ticks: { font: { size: 12, weight: 'bold' } } }, x: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } }
                 }
             });
         }
 
         function showList(id, list, unit) {
             document.getElementById(id).innerHTML = list.map((d, i) => `
-                <div class="rank-item flex justify-between items-center p-3 rounded-xl">
-                    <div class="flex flex-col truncate pr-2">
-                        <span class="text-xs font-black text-slate-700">${i+1}. ${d.n}</span>
-                        ${d.s ? `<span class="text-[9px] text-slate-400 font-bold uppercase">${d.s}</span>` : ''}
+                <div class="rank-item flex justify-between items-center p-4 rounded-2xl shadow-sm">
+                    <div class="flex flex-col truncate pr-3">
+                        <span class="text-sm font-black text-slate-800">${i+1}. ${d.n}</span>
+                        ${d.s ? `<span class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">${d.s}</span>` : ''}
                     </div>
-                    <span class="text-sm font-black text-indigo-600 whitespace-nowrap">${d.v}<span class="text-[10px] opacity-50 ml-0.5">${unit}</span></span>
+                    <span class="text-base font-black text-indigo-600 whitespace-nowrap">${d.v}<span class="text-xs opacity-50 ml-1 font-normal">${unit}</span></span>
                 </div>
             `).join('');
         }
 
         function switchMode(m) { 
             MODE = m; 
-            document.getElementById('currentModeDisplay').innerText = m;
-            document.getElementById('tab-presale').className = m==='presale'?'tab-btn active flex-1 py-4 text-sm font-black rounded-xl':'tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500';
-            document.getElementById('tab-resale').className = m==='resale'?'tab-btn active flex-1 py-4 text-sm font-black rounded-xl':'tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500';
+            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-5 text-base font-black rounded-2xl transition-all':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all';
+            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-5 text-base font-black rounded-2xl transition-all':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all';
             initUI(); 
         }
         function log(t, m) { document.getElementById(`${t}Log`).innerText = m; }
