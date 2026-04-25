@@ -2,83 +2,103 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v40.0 - 欄位精準過濾</title>
+    <title>ESTATE PRO v41.0 - 總價精準版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700;900&display=swap');
-        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #334155; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid white; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05); }
-        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.15); }
-        .rank-item { background: white; border-left: 5px solid #e2e8f0; transition: all 0.2s; }
-        .rank-item:hover { transform: translateX(8px); border-left-color: #4f46e5; background: #f5f3ff; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f8fafc; color: #334155; }
+        .glass-card { background: rgba(255, 255, 255, 1); border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transition: all 0.3s; }
+        .glass-card:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .tab-btn.active { color: #4f46e5; border-bottom: 4px solid #4f46e5; }
+        .rank-item { background: #f8fafc; border-radius: 1rem; border: 1px solid transparent; transition: all 0.2s; }
+        .rank-item:hover { border-color: #4f46e5; background: white; transform: translateY(-2px); }
     </style>
 </head>
 <body class="p-4 md:p-10">
 
-    <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
+    <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
-            <h1 class="text-4xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600">PRO</span> <span class="text-sm font-bold text-slate-400 align-top">v40.0</span></h1>
-            <p class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Strict Residential Filter (rps12)</p>
+            <h1 class="text-5xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600">PRO</span> <span class="text-sm font-bold text-slate-400 align-top">v41.0</span></h1>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-[0.3em] mt-2">Total Price Analysis Mode (rps25)</p>
         </div>
         <div class="flex gap-3">
-            <button onclick="syncAll()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-700 transition-all">🔄 雲端資料同步</button>
-            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-2xl font-bold text-sm shadow-sm">📁 上傳檔案</button>
-            <input type="file" id="fileIn" class="hidden" multiple onchange="handleFiles(this.files)">
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all">🔄 同步雲端資料</button>
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-indigo-500 uppercase tracking-widest">預售屋 (rps12:住家用)</span>
-            <div id="preCount" class="text-4xl font-black text-slate-800 my-2">0</div>
-            <div id="preLog" class="text-[11px] text-slate-400 truncate italic">Ready</div>
+    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8 text-center">
+        <div class="glass-card p-8 rounded-[2rem]">
+            <span class="text-xs font-black text-slate-400 uppercase tracking-widest">預售成交量</span>
+            <div id="preCount" class="text-4xl font-[900] text-slate-800 my-2">0</div>
         </div>
-        <div class="glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">中古屋 (rps12:住家用)</span>
-            <div id="resCount" class="text-4xl font-black text-slate-800 my-2">0</div>
-            <div id="resLog" class="text-[11px] text-slate-400 truncate italic">Ready</div>
+        <div class="glass-card p-8 rounded-[2rem]">
+            <span class="text-xs font-black text-slate-400 uppercase tracking-widest">中古成交量</span>
+            <div id="resCount" class="text-4xl font-[900] text-slate-800 my-2">0</div>
         </div>
-        <div class="hidden lg:block glass-card p-6 rounded-[2rem] bg-slate-900 text-white border-none">
-            <span class="text-[11px] font-black opacity-60 uppercase tracking-widest">分析引擎狀態</span>
-            <div class="text-xl font-bold mt-3 text-indigo-300">✅ 已鎖定住家用資料</div>
+        <div class="glass-card p-8 rounded-[2rem]">
+            <span class="text-xs font-black text-indigo-600 uppercase tracking-widest">目前模式</span>
+            <div class="text-2xl font-black mt-2">🏠 住家用</div>
         </div>
-        <div class="hidden lg:block glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">最後更新</span>
-            <div class="text-xl font-black text-slate-700 mt-3" id="lastSyncTime">--:--</div>
+        <div class="glass-card p-8 rounded-[2rem]">
+            <span class="text-xs font-black text-slate-400 uppercase tracking-widest">價格基準</span>
+            <div class="text-2xl font-black mt-2 text-emerald-600">總價 (萬)</div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto flex mb-8 bg-slate-200/50 rounded-[1.5rem] p-1.5 gap-2">
-        <button id="tab-presale" onclick="switchMode('presale')" class="active flex-1 py-5 text-base font-black rounded-2xl transition-all">🏠 預售屋市場</button>
-        <button id="tab-resale" onclick="switchMode('resale')" class="flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all">🏢 中古屋市場</button>
+    <div class="max-w-7xl mx-auto flex mb-10 border-b-2 border-slate-200">
+        <button id="tab-presale" onclick="switchMode('presale')" class="active flex-1 py-4 text-lg font-black transition-all">🏠 預售屋總價分析</button>
+        <button id="tab-resale" onclick="switchMode('resale')" class="flex-1 py-4 text-lg font-black text-slate-400 transition-all">🏢 中古屋總價分析</button>
     </div>
 
     <main class="max-w-7xl mx-auto">
-        <div class="glass-card mb-10 grid grid-cols-1 md:grid-cols-5 gap-8 items-end p-10 rounded-[2.5rem]">
-            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select></div>
-            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
-            <div class="col-span-2 flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">交易日期範圍</label><div class="flex gap-3"><select id="fStart" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select><select id="fEnd" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select></div></div>
-            <button onclick="window.print()" class="bg-slate-900 text-white py-5 rounded-2xl font-black text-base shadow-2xl transition-all hover:bg-black">📋 產出分析報表</button>
+        <div class="glass-card mb-10 grid grid-cols-1 md:grid-cols-4 gap-8 p-10 rounded-[2.5rem]">
+            <div class="flex flex-col gap-2"><label class="text-xs font-black text-slate-400 uppercase">地理區域</label><select id="fDist" class="bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold outline-none" onchange="run()"></select></div>
+            <div class="flex flex-col gap-2"><label class="text-xs font-black text-slate-400 uppercase">房型</label><select id="fRoom" class="bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold outline-none" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
+            <div class="flex flex-col gap-2"><label class="text-xs font-black text-slate-400 uppercase">開始年月</label><select id="fStart" class="bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold outline-none" onchange="run()"></select></div>
+            <div class="flex flex-col gap-2"><label class="text-xs font-black text-slate-400 uppercase">結束年月</label><select id="fEnd" class="bg-slate-50 border border-slate-200 rounded-xl p-4 font-bold outline-none" onchange="run()"></select></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
-            <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
-                <h3 class="text-lg font-black mb-8 flex items-center gap-3">成交總量趨勢</h3>
-                <div class="h-[300px]"><canvas id="chartVol"></canvas></div>
+            <div class="glass-card p-10 rounded-[2.5rem] h-[500px]">
+                <h3 class="text-xl font-black mb-6">成交件數趨勢</h3>
+                <div class="h-[380px]"><canvas id="chartVol"></canvas></div>
             </div>
-            <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
-                <h3 class="text-lg font-black mb-8 flex items-center gap-3">市場價格走勢 (萬/坪)</h3>
-                <div class="h-[300px]"><canvas id="chartPrice"></canvas></div>
+            <div class="glass-card p-10 rounded-[2.5rem] h-[500px]">
+                <h3 class="text-xl font-black mb-6">成交總價走勢 (單位：萬)</h3>
+                <div class="h-[380px]"><canvas id="chartPrice"></canvas></div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8" id="stats">
-            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-indigo-600 mb-6 border-b pb-4 uppercase">💎 區域均價</h4><div id="rankPrice" class="space-y-4"></div></div>
-            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-slate-500 mb-6 border-b pb-4 uppercase">🔥 熱門區域</h4><div id="rankVol" class="space-y-4"></div></div>
-            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-emerald-600 mb-6 border-b pb-4 uppercase">🏆 指標案件</h4><div id="rankTop" class="space-y-4"></div></div>
-            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-amber-600 mb-6 border-b pb-4 uppercase">📊 成交頻次</h4><div id="rankHot" class="space-y-4"></div></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <h4 class="text-sm font-black text-indigo-600 mb-6 border-b pb-4 uppercase">💎 區域均總價 Top 5</h4>
+                    <div id="rankPrice" class="space-y-3"></div>
+                </div>
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <h4 class="text-sm font-black text-slate-500 mb-6 border-b pb-4 uppercase">🔥 熱門交易區域</h4>
+                    <div id="rankVol" class="space-y-3"></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <h4 class="text-sm font-black text-emerald-600 mb-6 border-b pb-4 uppercase">🏆 指標豪邸 (總價最高)</h4>
+                    <div id="rankTop" class="space-y-3"></div>
+                </div>
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <h4 class="text-sm font-black text-amber-600 mb-6 border-b pb-4 uppercase">📊 成交量最大建案</h4>
+                    <div id="rankHot" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-10 rounded-[2.5rem] border-l-[12px] border-l-indigo-600">
+            <h3 class="text-xl font-black mb-4 flex items-center gap-2">📝 市場觀察摘要 <span class="text-xs font-normal text-slate-400">Smart Insights</span></h3>
+            <div id="smartInsight" class="text-lg text-slate-600 leading-relaxed font-medium">
+                正在分析數據中...
+            </div>
         </div>
     </main>
 
@@ -89,18 +109,16 @@
         };
         let db, MEMORY = { presale: [], resale: [] }, MODE = 'presale', charts = {}, monthlyTops = {};
 
-        // 提升版號以確保重新解析
-        const req = indexedDB.open("EstateMaster_v54", 1);
+        const req = indexedDB.open("EstateMaster_v60", 1);
         req.onupgradeneeded = e => {
             let _db = e.target.result;
-            if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
-            if(!_db.objectStoreNames.contains("resale")) _db.createObjectStore("resale", { keyPath: "uid" });
+            _db.createObjectStore("presale", { keyPath: "uid" });
+            _db.createObjectStore("resale", { keyPath: "uid" });
         };
         req.onsuccess = e => { db = e.target.result; syncAll(); };
 
         async function syncAll() {
             await Promise.all([syncFile(CLOUD.presale, 'presale'), syncFile(CLOUD.resale, 'resale')]);
-            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString();
             load();
         }
 
@@ -109,15 +127,7 @@
                 const res = await fetch(url + "?t=" + Date.now());
                 const buf = await res.arrayBuffer();
                 await process(buf, type);
-            } catch (e) { log(type==='presale'?'pre':'res', '連線異常'); }
-        }
-
-        async function handleFiles(files) {
-            for (let f of files) {
-                const type = f.name.includes('resale') ? 'resale' : 'presale';
-                await process(await f.arrayBuffer(), type);
-            }
-            load();
+            } catch (e) { console.error('Sync error'); }
         }
 
         async function process(buffer, type) {
@@ -128,7 +138,6 @@
             const parsed = Papa.parse(text.trim(), { header: true, skipEmptyLines: true });
             const tx = db.transaction(type, "readwrite");
             const store = tx.objectStore(type);
-            let count = 0;
 
             parsed.data.forEach(row => {
                 const keys = Object.keys(row);
@@ -137,39 +146,30 @@
                     return key ? row[key] : "";
                 };
 
-                // 🚀 核心邏輯修正：嚴格檢查 rps12 欄位
-                const rps12 = getV(['rps12', '主要用途']);
-                if (rps12 !== '住家用') return;
+                // 核心過濾：必須是住家用
+                if (getV(['rps12', '主要用途']) !== '住家用') return;
 
                 const dist = getV(['district', '鄉鎮市區']);
-                const priceUnit = parseFloat(getV(['rps22', '單價', 'amountsunit'])) || 0;
+                // 🚀 關鍵修正：抓取 rps25 總價元
+                const totalPriceRaw = parseFloat(getV(['rps25', '總價元'])) || 0;
                 const dateRaw = getV(['rps07', '交易年月', 'yyymmdd']);
                 const uid = getV(['rps27', 'rps31', '編號']) || (Math.random() + '');
 
-                if (!dist || !dateRaw || priceUnit <= 0) return;
+                if (!dist || !dateRaw || totalPriceRaw <= 0) return;
 
                 const date = String(dateRaw).substring(0, 5);
-                const priceInWan = (priceUnit / 0.3025) / 10000;
+                // 🚀 轉換為「萬」
+                const priceInWan = Math.round(totalPriceRaw / 10000);
                 
                 const r = parseInt(getV(['rps16'])) || 0;
-                const t = parseInt(getV(['rps17'])) || 0;
-                const w = parseInt(getV(['rps18'])) || 0;
-                
-                let name = "";
-                if (type === 'presale') {
-                    name = getV(['rps28', '建案名稱']) || "住家案";
-                } else {
-                    const addr = getV(['rps02', '位置', '土地區段']);
-                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 15);
-                }
+                let name = (type === 'presale') ? (getV(['rps28', '建案名稱']) || "住家案") : (getV(['rps02', '位置']).replace("新北市", "").split(/[號樓室之]/)[0].trim());
 
                 store.put({
-                    uid, district: dist.trim(), name: name.trim() || "未命名案件", price: priceInWan, date, 
-                    room: r >= 4 ? "4" : String(r), desc: `${r}房/${t}廳/${w}衛`
+                    uid, district: dist.trim(), name: name.substring(0, 15), 
+                    price: priceInWan, date, room: r >= 4 ? "4" : String(r), 
+                    desc: `${r}房/${parseInt(getV(['rps17']))}廳`
                 });
-                count++;
             });
-            log(type==='presale'?'pre':'res', `已過濾載入 ${count} 筆`);
             return new Promise(r => tx.oncomplete = r);
         }
 
@@ -203,6 +203,27 @@
             const end = document.getElementById('fEnd').value;
             const filtered = data.filter(d => (dist === 'all' || d.district === dist) && (room === 'all' || d.room === room) && (d.date >= start && d.date <= end));
             render(filtered);
+            updateInsight(filtered, dist, start, end);
+        }
+
+        function updateInsight(data, dist, start, end) {
+            if(!data.length) { document.getElementById('smartInsight').innerText = "此篩選條件下無資料。"; return; }
+            
+            const avgPrice = Math.round(data.reduce((a, b) => a + b.price, 0) / data.length);
+            const topCase = data.reduce((p, c) => (p.price > c.price) ? p : c);
+            const distText = dist === 'all' ? '跨區域' : dist;
+            
+            const hMap = {}; data.forEach(d => hMap[d.name] = (hMap[d.name]||0)+1);
+            const hotCase = Object.entries(hMap).sort((a,b)=>b[1]-a[1])[0];
+
+            document.getElementById('smartInsight').innerHTML = `
+                在 <span class="text-indigo-600 font-black">${start} 至 ${end}</span> 期間，
+                <span class="text-indigo-600 font-black">${distText}</span> 的住家市場平均成交總價約為 
+                <span class="text-slate-900 font-black">${avgPrice.toLocaleString()} 萬</span>。
+                交易最熱絡的建案為 <span class="text-slate-900 font-black">「${hotCase[0]}」</span>，累計成交達 ${hotCase[1]} 筆。
+                本期最高總價紀錄由 <span class="text-emerald-600 font-black">「${topCase.name}」</span> 以 
+                <span class="text-emerald-600 font-black">${topCase.price.toLocaleString()} 萬</span> 創下。
+            `;
         }
 
         function render(data) {
@@ -214,27 +235,27 @@
                 const m = data.filter(i => i.date === d);
                 if (m.length) {
                     const top = m.reduce((p, c) => (p.price > c.price) ? p : c);
-                    monthlyTops[d] = { name: top.name, price: top.price.toFixed(1), desc: top.desc };
+                    monthlyTops[d] = { name: top.name, price: top.price, desc: top.desc };
                 }
             });
 
             updateChart('chartPrice', 'line', dates, [{
-                label: '住家均價', data: dates.map(d => {
+                label: '平均總價', data: dates.map(d => {
                     const items = data.filter(i => i.date === d);
-                    return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
-                }), borderColor: color, borderWidth: 5, pointBackgroundColor: 'white', pointRadius: 6, fill: true, backgroundColor: color + '15'
+                    return Math.round(items.reduce((a, b) => a + b.price, 0) / items.length);
+                }), borderColor: color, borderWidth: 4, fill: true, backgroundColor: color + '10'
             }], true);
 
             updateChart('chartVol', 'bar', dates, [{
-                label: '成交量', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40', borderRadius: 10
+                label: '成交件數', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40', borderRadius: 8
             }]);
 
             const dMap = {}; data.forEach(d => { if(!dMap[d.district]) dMap[d.district]={s:0,c:0}; dMap[d.district].s+=d.price; dMap[d.district].c++; });
-            showList('rankPrice', Object.entries(dMap).map(([k,v])=>({n:k, v:(v.s/v.c).toFixed(1)})).sort((a,b)=>b.v-a.v).slice(0,5), ' 萬');
+            showList('rankPrice', Object.entries(dMap).map(([k,v])=>({n:k, v:Math.round(v.s/v.c)})).sort((a,b)=>b.v-a.v).slice(0,5), ' 萬');
             showList('rankVol', Object.entries(dMap).map(([k,v])=>({n:k, v:v.c})).sort((a,b)=>b.v-a.v).slice(0,5), ' 件');
-            showList('rankTop', [...data].sort((a,b)=>b.price-a.price).slice(0,8).map(d=>({n:d.name, v:d.price.toFixed(1), s: d.desc})), ' 萬');
+            showList('rankTop', [...data].sort((a,b)=>b.price-a.price).slice(0,6).map(d=>({n:d.name, v:d.price, s: d.desc})), ' 萬');
             const hMap = {}; data.forEach(d => hMap[d.name] = (hMap[d.name]||0)+1);
-            showList('rankHot', Object.entries(hMap).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,8), ' 戶');
+            showList('rankHot', Object.entries(hMap).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,6), ' 戶');
         }
 
         function updateChart(id, type, labels, datasets, tip = false) {
@@ -246,41 +267,37 @@
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)', padding: 20,
-                            titleFont: { size: 16, weight: '900' },
-                            bodyFont: { size: 14 },
+                            padding: 15,
                             callbacks: {
                                 afterBody: (items) => {
                                     const t = monthlyTops[items[0].label];
-                                    return (tip && t) ? ['', `🏆 指標案：${t.name}`, `💰 單價：${t.price} 萬`, `🏠 配置：${t.desc}`] : [];
+                                    return (tip && t) ? ['', `🏆 指標案：${t.name}`, `💰 總價：${t.price.toLocaleString()} 萬`] : [];
                                 }
                             }
                         }
-                    },
-                    scales: { y: { ticks: { font: { weight: 'bold' } } }, x: { ticks: { font: { weight: 'bold' } } } }
+                    }
                 }
             });
         }
 
         function showList(id, list, unit) {
             document.getElementById(id).innerHTML = list.map((d, i) => `
-                <div class="rank-item flex justify-between items-center p-4 rounded-2xl shadow-sm">
-                    <div class="flex flex-col truncate pr-3">
+                <div class="rank-item flex justify-between items-center p-4">
+                    <div class="flex flex-col truncate pr-2">
                         <span class="text-sm font-black text-slate-800">${i+1}. ${d.n}</span>
-                        ${d.s ? `<span class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">${d.s}</span>` : ''}
+                        ${d.s ? `<span class="text-[10px] text-slate-400 font-bold mt-0.5">${d.s}</span>` : ''}
                     </div>
-                    <span class="text-base font-black text-indigo-600 whitespace-nowrap">${d.v}<span class="text-xs opacity-50 ml-1 font-normal">${unit}</span></span>
+                    <span class="text-base font-black text-indigo-600">${d.v.toLocaleString()}<span class="text-[10px] opacity-40 ml-1 font-normal">${unit}</span></span>
                 </div>
             `).join('');
         }
 
         function switchMode(m) { 
             MODE = m; 
-            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-5 text-base font-black rounded-2xl':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500';
-            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-5 text-base font-black rounded-2xl':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500';
+            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-4 text-lg font-black':'flex-1 py-4 text-lg font-black text-slate-400';
+            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-4 text-lg font-black':'flex-1 py-4 text-lg font-black text-slate-400';
             initUI(); 
         }
-        function log(t, m) { document.getElementById(`${t}Log`).innerText = m; }
     </script>
 </body>
 </html>
