@@ -2,30 +2,28 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v38.0 - 純住家濾鏡版</title>
+    <title>ESTATE PRO v40.0 - 欄位精準過濾</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700;900&display=swap');
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #334155; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
-        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid white; box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05); }
+        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.15); }
         .rank-item { background: white; border-left: 5px solid #e2e8f0; transition: all 0.2s; }
         .rank-item:hover { transform: translateX(8px); border-left-color: #4f46e5; background: #f5f3ff; }
-        select { cursor: pointer; transition: all 0.2s; }
-        select:hover { background-color: #f8fafc; }
     </style>
 </head>
 <body class="p-4 md:p-10">
 
     <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
         <div>
-            <h1 class="text-4xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600">PRO</span> <span class="text-sm font-bold text-slate-400 align-top">v38.0</span></h1>
-            <p class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Residential Market Intelligence</p>
+            <h1 class="text-4xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600">PRO</span> <span class="text-sm font-bold text-slate-400 align-top">v40.0</span></h1>
+            <p class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Strict Residential Filter (rps12)</p>
         </div>
         <div class="flex gap-3">
-            <button onclick="syncAll()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-700 transition-all">🔄 同步雲端資料</button>
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl hover:bg-indigo-700 transition-all">🔄 雲端資料同步</button>
             <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-2xl font-bold text-sm shadow-sm">📁 上傳檔案</button>
             <input type="file" id="fileIn" class="hidden" multiple onchange="handleFiles(this.files)">
         </div>
@@ -33,21 +31,21 @@
 
     <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-indigo-500 uppercase tracking-widest">預售屋 (住家)</span>
+            <span class="text-[11px] font-black text-indigo-500 uppercase tracking-widest">預售屋 (rps12:住家用)</span>
             <div id="preCount" class="text-4xl font-black text-slate-800 my-2">0</div>
-            <div id="preLog" class="text-[11px] text-slate-400 font-medium truncate italic">Waiting...</div>
+            <div id="preLog" class="text-[11px] text-slate-400 truncate italic">Ready</div>
         </div>
         <div class="glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">中古屋 (住家)</span>
+            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">中古屋 (rps12:住家用)</span>
             <div id="resCount" class="text-4xl font-black text-slate-800 my-2">0</div>
-            <div id="resLog" class="text-[11px] text-slate-400 font-medium truncate italic">Waiting...</div>
+            <div id="resLog" class="text-[11px] text-slate-400 truncate italic">Ready</div>
         </div>
-        <div class="hidden lg:block glass-card p-6 rounded-[2rem] bg-slate-900 text-white">
-            <span class="text-[11px] font-black opacity-60 uppercase">過濾狀態</span>
-            <div class="text-xl font-bold mt-3 text-emerald-400">✅ 已濾除土地/工業/辦公</div>
+        <div class="hidden lg:block glass-card p-6 rounded-[2rem] bg-slate-900 text-white border-none">
+            <span class="text-[11px] font-black opacity-60 uppercase tracking-widest">分析引擎狀態</span>
+            <div class="text-xl font-bold mt-3 text-indigo-300">✅ 已鎖定住家用資料</div>
         </div>
         <div class="hidden lg:block glass-card p-6 rounded-[2rem]">
-            <span class="text-[11px] font-black text-slate-400 uppercase">最後同步</span>
+            <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">最後更新</span>
             <div class="text-xl font-black text-slate-700 mt-3" id="lastSyncTime">--:--</div>
         </div>
     </div>
@@ -59,40 +57,28 @@
 
     <main class="max-w-7xl mx-auto">
         <div class="glass-card mb-10 grid grid-cols-1 md:grid-cols-5 gap-8 items-end p-10 rounded-[2.5rem]">
-            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold focus:border-indigo-500 outline-none transition-all" onchange="run()"></select></div>
-            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold focus:border-indigo-500 outline-none" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
+            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select></div>
+            <div class="flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
             <div class="col-span-2 flex flex-col gap-3"><label class="text-xs font-black text-slate-500 uppercase">交易日期範圍</label><div class="flex gap-3"><select id="fStart" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select><select id="fEnd" class="w-1/2 bg-white border-2 border-slate-100 rounded-2xl p-4 text-base font-bold outline-none" onchange="run()"></select></div></div>
-            <button onclick="window.print()" class="bg-slate-900 text-white py-5 rounded-2xl font-black text-base shadow-2xl hover:bg-black active:scale-95 transition-all">📋 產出分析報表</button>
+            <button onclick="window.print()" class="bg-slate-900 text-white py-5 rounded-2xl font-black text-base shadow-2xl transition-all hover:bg-black">📋 產出分析報表</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
             <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
-                <h3 class="text-lg font-black mb-8 flex items-center gap-3 italic">Market Volume <span class="text-xs font-normal text-slate-400">/ 成交件數</span></h3>
+                <h3 class="text-lg font-black mb-8 flex items-center gap-3">成交總量趨勢</h3>
                 <div class="h-[300px]"><canvas id="chartVol"></canvas></div>
             </div>
             <div class="glass-card p-10 rounded-[2.5rem] h-[450px]">
-                <h3 class="text-lg font-black mb-8 flex items-center gap-3 italic">Price Trend <span class="text-xs font-normal text-slate-400">/ 均價 (萬/坪)</span></h3>
+                <h3 class="text-lg font-black mb-8 flex items-center gap-3">市場價格走勢 (萬/坪)</h3>
                 <div class="h-[300px]"><canvas id="chartPrice"></canvas></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8" id="stats">
-            <div class="glass-card p-8 rounded-[2rem]">
-                <h4 class="text-xs font-black text-indigo-600 mb-6 border-b-2 border-indigo-50 pb-4 uppercase">💎 區域均價 Top 5</h4>
-                <div id="rankPrice" class="space-y-4"></div>
-            </div>
-            <div class="glass-card p-8 rounded-[2rem]">
-                <h4 class="text-xs font-black text-slate-500 mb-6 border-b-2 border-slate-50 pb-4 uppercase">🔥 熱門交易區域</h4>
-                <div id="rankVol" class="space-y-4"></div>
-            </div>
-            <div class="glass-card p-8 rounded-[2rem]">
-                <h4 class="text-xs font-black text-emerald-600 mb-6 border-b-2 border-emerald-50 pb-4 uppercase">🏆 指標豪邸排名</h4>
-                <div id="rankTop" class="space-y-4"></div>
-            </div>
-            <div class="glass-card p-8 rounded-[2rem]">
-                <h4 class="text-xs font-black text-amber-600 mb-6 border-b-2 border-amber-50 pb-4 uppercase">📊 成交頻次建案</h4>
-                <div id="rankHot" class="space-y-4"></div>
-            </div>
+            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-indigo-600 mb-6 border-b pb-4 uppercase">💎 區域均價</h4><div id="rankPrice" class="space-y-4"></div></div>
+            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-slate-500 mb-6 border-b pb-4 uppercase">🔥 熱門區域</h4><div id="rankVol" class="space-y-4"></div></div>
+            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-emerald-600 mb-6 border-b pb-4 uppercase">🏆 指標案件</h4><div id="rankTop" class="space-y-4"></div></div>
+            <div class="glass-card p-8 rounded-[2rem]"><h4 class="text-xs font-black text-amber-600 mb-6 border-b pb-4 uppercase">📊 成交頻次</h4><div id="rankHot" class="space-y-4"></div></div>
         </div>
     </main>
 
@@ -103,7 +89,8 @@
         };
         let db, MEMORY = { presale: [], resale: [] }, MODE = 'presale', charts = {}, monthlyTops = {};
 
-        const req = indexedDB.open("EstateMaster_v48", 1);
+        // 提升版號以確保重新解析
+        const req = indexedDB.open("EstateMaster_v54", 1);
         req.onupgradeneeded = e => {
             let _db = e.target.result;
             if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
@@ -112,9 +99,8 @@
         req.onsuccess = e => { db = e.target.result; syncAll(); };
 
         async function syncAll() {
-            log('pre', 'Syncing...'); log('res', 'Syncing...');
             await Promise.all([syncFile(CLOUD.presale, 'presale'), syncFile(CLOUD.resale, 'resale')]);
-            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString();
             load();
         }
 
@@ -148,20 +134,12 @@
                 const keys = Object.keys(row);
                 const getV = (kws) => {
                     const key = keys.find(k => kws.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
-                    return key ? row[key] : null;
+                    return key ? row[key] : "";
                 };
 
-                // 🚀 關鍵過濾邏輯：只針對住家型買賣
-                const usage = getV(['rps09', '建物用途']) || "";
-                const target = getV(['rps01', '交易標的']) || "";
-                
-                // 過濾條件：
-                // 1. 建物用途必須包含「住」字 (住家用, 住商用, 住工用...)
-                // 2. 排除純「土地」或純「車位」的買賣標的
-                const isResidential = usage.includes('住') || usage.includes('住宅') || usage.includes('國宅');
-                const isProperty = target.includes('房地');
-                
-                if (!isResidential || !isProperty) return;
+                // 🚀 核心邏輯修正：嚴格檢查 rps12 欄位
+                const rps12 = getV(['rps12', '主要用途']);
+                if (rps12 !== '住家用') return;
 
                 const dist = getV(['district', '鄉鎮市區']);
                 const priceUnit = parseFloat(getV(['rps22', '單價', 'amountsunit'])) || 0;
@@ -181,18 +159,17 @@
                 if (type === 'presale') {
                     name = getV(['rps28', '建案名稱']) || "住家案";
                 } else {
-                    const addr = getV(['rps02', '位置', '土地區段']) || "";
+                    const addr = getV(['rps02', '位置', '土地區段']);
                     name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 15);
                 }
 
                 store.put({
-                    uid, district: dist.trim(), name: name.trim(), price: priceInWan, date, 
-                    room: r >= 4 ? "4" : String(r), 
-                    desc: `${r}房/${t}廳/${w}衛`
+                    uid, district: dist.trim(), name: name.trim() || "未命名案件", price: priceInWan, date, 
+                    room: r >= 4 ? "4" : String(r), desc: `${r}房/${t}廳/${w}衛`
                 });
                 count++;
             });
-            log(type==='presale'?'pre':'res', `已載入 ${count} 筆`);
+            log(type==='presale'?'pre':'res', `已過濾載入 ${count} 筆`);
             return new Promise(r => tx.oncomplete = r);
         }
 
@@ -224,12 +201,7 @@
             const room = document.getElementById('fRoom').value;
             const start = document.getElementById('fStart').value;
             const end = document.getElementById('fEnd').value;
-
-            const filtered = data.filter(d => {
-                return (dist === 'all' || d.district === dist) &&
-                       (room === 'all' || d.room === room) &&
-                       (d.date >= start && d.date <= end);
-            });
+            const filtered = data.filter(d => (dist === 'all' || d.district === dist) && (room === 'all' || d.room === room) && (d.date >= start && d.date <= end));
             render(filtered);
         }
 
@@ -274,8 +246,7 @@
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            padding: 20,
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)', padding: 20,
                             titleFont: { size: 16, weight: '900' },
                             bodyFont: { size: 14 },
                             callbacks: {
@@ -286,7 +257,7 @@
                             }
                         }
                     },
-                    scales: { y: { grid: { borderDash: [6, 6] }, ticks: { font: { size: 12, weight: 'bold' } } }, x: { grid: { display: false }, ticks: { font: { size: 12, weight: 'bold' } } } }
+                    scales: { y: { ticks: { font: { weight: 'bold' } } }, x: { ticks: { font: { weight: 'bold' } } } }
                 }
             });
         }
@@ -305,8 +276,8 @@
 
         function switchMode(m) { 
             MODE = m; 
-            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-5 text-base font-black rounded-2xl transition-all':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all';
-            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-5 text-base font-black rounded-2xl transition-all':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500 transition-all';
+            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-5 text-base font-black rounded-2xl':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500';
+            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-5 text-base font-black rounded-2xl':'flex-1 py-5 text-base font-black rounded-2xl text-slate-500';
             initUI(); 
         }
         function log(t, m) { document.getElementById(`${t}Log`).innerText = m; }
