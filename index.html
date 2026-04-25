@@ -2,67 +2,98 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v36.0 - 手機同步修復版</title>
+    <title>ESTATE PRO v37.0 - 質感進階版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        .tab-btn.active { border-color: #4f46e5; color: #4f46e5; font-weight: 800; background: #f5f3ff; }
-        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.25rem; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700;900&display=swap');
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #334155; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        .tab-btn.active { color: #4f46e5; background: white; box-shadow: 0 2px 10px rgba(79, 70, 229, 0.1); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 25%; width: 50%; height: 3px; background: #4f46e5; border-radius: 10px; }
+        .rank-item { background: linear-gradient(to right, #ffffff, #f8fafc); border-left: 4px solid #e2e8f0; transition: transform 0.2s; }
+        .rank-item:hover { transform: translateX(5px); border-left-color: #4f46e5; }
+        canvas { filter: drop-shadow(0 5px 15px rgba(0,0,0,0.02)); }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-10">
 
-    <header class="max-w-7xl mx-auto mb-6 flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-black text-slate-800 tracking-tight">ESTATE <span class="text-indigo-600">v36.0</span></h1>
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Mobile Sync Optimized</p>
+    <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="text-center md:text-left">
+            <h1 class="text-3xl font-[900] text-slate-900 tracking-tighter">ESTATE <span class="text-indigo-600 italic">ENGINE</span> <span class="text-sm font-bold text-slate-400 align-top ml-1">v37.0</span></h1>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Real-time Real Estate Analytics</p>
         </div>
-        <div class="flex gap-2">
-            <button onclick="syncAll()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md">🔄 同步</button>
-            <button onclick="document.getElementById('fileIn').click()" class="bg-white border px-4 py-2 rounded-lg font-bold text-xs">📁 上傳</button>
+        <div class="flex gap-3">
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-200 hover:scale-105 active:scale-95 transition-all">🔄 雲端資料同步</button>
+            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all">📁 上傳檔案</button>
             <input type="file" id="fileIn" class="hidden" multiple onchange="handleFiles(this.files)">
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto grid grid-cols-2 gap-3 mb-6">
-        <div class="bg-white border p-3 rounded-xl shadow-sm">
-            <span class="text-[9px] font-black text-indigo-500 block">🏠 預售 (筆數)</span>
-            <div id="preCount" class="text-lg font-black text-slate-700">0</div>
-            <div id="preLog" class="text-[8px] text-slate-400 truncate">等待中...</div>
+    <div class="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="glass-card p-5 rounded-3xl">
+            <span class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">預售屋資料</span>
+            <div id="preCount" class="text-3xl font-black text-slate-800 my-1">0</div>
+            <div id="preLog" class="text-[10px] text-slate-400 font-medium truncate">Waiting...</div>
         </div>
-        <div class="bg-white border p-3 rounded-xl shadow-sm">
-            <span class="text-[9px] font-black text-slate-500 block">🏢 中古 (筆數)</span>
-            <div id="resCount" class="text-lg font-black text-slate-700">0</div>
-            <div id="resLog" class="text-[8px] text-slate-400 truncate">等待中...</div>
+        <div class="glass-card p-5 rounded-3xl border-l-4 border-l-slate-400">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">中古屋資料</span>
+            <div id="resCount" class="text-3xl font-black text-slate-800 my-1">0</div>
+            <div id="resLog" class="text-[10px] text-slate-400 font-medium truncate">Waiting...</div>
+        </div>
+        <div class="hidden lg:block glass-card p-5 rounded-3xl bg-indigo-600 text-white border-none shadow-indigo-200">
+            <span class="text-[10px] font-black opacity-60 uppercase tracking-widest text-white">最後更新</span>
+            <div class="text-xl font-black mt-2" id="lastSyncTime">--:--:--</div>
+        </div>
+        <div class="hidden lg:block glass-card p-5 rounded-3xl">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">目前模式</span>
+            <div class="text-xl font-black text-indigo-600 mt-2 uppercase" id="currentModeDisplay">Presale</div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto flex mb-6 bg-white rounded-xl p-1 border shadow-sm">
-        <button id="tab-presale" onclick="switchMode('presale')" class="active flex-1 py-2.5 text-xs font-black rounded-lg">預售</button>
-        <button id="tab-resale" onclick="switchMode('resale')" class="flex-1 py-2.5 text-xs font-black rounded-lg">中古</button>
+    <div class="max-w-7xl mx-auto flex mb-8 bg-slate-200/50 rounded-2xl p-1.5 gap-1">
+        <button id="tab-presale" onclick="switchMode('presale')" class="tab-btn active flex-1 py-4 text-sm font-black rounded-xl">🏠 預售市場 (NEW)</button>
+        <button id="tab-resale" onclick="switchMode('resale')" class="tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500">🏢 中古市場 (RESALE)</button>
     </div>
 
     <main class="max-w-7xl mx-auto">
-        <div class="card mb-6 grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div class="col-span-1"><label class="text-[9px] font-black text-slate-400 uppercase">區域</label><select id="fDist" class="w-full mt-1 border rounded-md p-1.5 text-sm" onchange="run()"></select></div>
-            <div class="col-span-1"><label class="text-[9px] font-black text-slate-400 uppercase">房型</label><select id="fRoom" class="w-full mt-1 border rounded-md p-1.5 text-sm" onchange="run()"><option value="all">全部</option><option value="1">1房</option><option value="2">2房</option><option value="3">3房</option><option value="4">4+</option></select></div>
-            <div class="col-span-2 md:col-span-2"><label class="text-[9px] font-black text-slate-400 uppercase">交易區間</label><div class="flex gap-1 mt-1"><select id="fStart" class="w-1/2 border rounded-md p-1.5 text-sm" onchange="run()"></select><select id="fEnd" class="w-1/2 border rounded-md p-1.5 text-sm" onchange="run()"></select></div></div>
-            <button onclick="window.print()" class="col-span-2 md:col-span-1 bg-slate-900 text-white py-2 rounded-lg text-xs font-bold mt-auto">📋 導出</button>
+        <div class="glass-card mb-10 grid grid-cols-2 md:grid-cols-5 gap-6 items-end p-8 rounded-[2rem]">
+            <div class="flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">地理區域</label><select id="fDist" class="bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all" onchange="run()"></select></div>
+            <div class="flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">房型規劃</label><select id="fRoom" class="bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" onchange="run()"><option value="all">全部房型</option><option value="1">1 房</option><option value="2">2 房</option><option value="3">3 房</option><option value="4">4 房以上</option></select></div>
+            <div class="col-span-2 flex flex-col gap-2"><label class="text-[11px] font-black text-slate-500 uppercase">交易日期區間</label><div class="flex gap-2"><select id="fStart" class="w-1/2 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold" onchange="run()"></select><select id="fEnd" class="w-1/2 bg-slate-50 border-none ring-1 ring-slate-200 rounded-xl p-3 text-sm font-bold" onchange="run()"></select></div></div>
+            <button onclick="window.print()" class="bg-slate-900 text-white py-3.5 rounded-xl font-black text-sm shadow-xl shadow-slate-200 hover:bg-black transition-all">📋 導出分析報表</button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="card h-[280px]"><canvas id="chartVol"></canvas></div>
-            <div class="card h-[280px]"><canvas id="chartPrice"></canvas></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <div class="glass-card p-8 rounded-[2rem] h-[400px]">
+                <h3 class="text-sm font-black mb-6 flex items-center gap-2"><span class="w-2 h-2 bg-indigo-500 rounded-full"></span> 成交總量趨勢 (Volume)</h3>
+                <div class="h-[300px]"><canvas id="chartVol"></canvas></div>
+            </div>
+            <div class="glass-card p-8 rounded-[2rem] h-[400px]">
+                <h3 class="text-sm font-black mb-6 flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 市場價格走勢 (Price / 萬)</h3>
+                <div class="h-[300px]"><canvas id="chartPrice"></canvas></div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stats">
-            <div class="card p-3"><h4 class="text-[9px] font-black text-slate-400 border-b pb-2 mb-2">區域均價</h4><div id="rankPrice" class="space-y-1.5"></div></div>
-            <div class="card p-3"><h4 class="text-[9px] font-black text-slate-400 border-b pb-2 mb-2">成交總量</h4><div id="rankVol" class="space-y-1.5"></div></div>
-            <div class="card p-3"><h4 class="text-[9px] font-black text-slate-400 border-b pb-2 mb-2">最高單價</h4><div id="rankTop" class="space-y-1.5"></div></div>
-            <div class="card p-3"><h4 class="text-[9px] font-black text-slate-400 border-b pb-2 mb-2">熱門案件</h4><div id="rankHot" class="space-y-1.5"></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6" id="stats">
+            <div class="glass-card p-6 rounded-3xl">
+                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">💎 區域均價排名</h4>
+                <div id="rankPrice" class="space-y-3"></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">🔥 成交熱區</h4>
+                <div id="rankVol" class="space-y-3"></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">🏆 指標案件排行</h4>
+                <div id="rankTop" class="space-y-3"></div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h4 class="text-[11px] font-black text-slate-400 mb-5 tracking-tighter uppercase border-b pb-3">📈 交易頻次建案</h4>
+                <div id="rankHot" class="space-y-3"></div>
+            </div>
         </div>
     </main>
 
@@ -73,8 +104,7 @@
         };
         let db, MEMORY = { presale: [], resale: [] }, MODE = 'presale', charts = {}, monthlyTops = {};
 
-        // 💡 關鍵修復：提高版本號到 v43，強制清空手機端錯誤資料
-        const req = indexedDB.open("EstateMaster_v43", 1);
+        const req = indexedDB.open("EstateMaster_v45", 1);
         req.onupgradeneeded = e => {
             let _db = e.target.result;
             if(!_db.objectStoreNames.contains("presale")) _db.createObjectStore("presale", { keyPath: "uid" });
@@ -83,18 +113,18 @@
         req.onsuccess = e => { db = e.target.result; syncAll(); };
 
         async function syncAll() {
-            log('pre', 'Sync...'); log('res', 'Sync...');
-            // 💡 加上隨機參數避免快取
+            log('pre', '同步中...'); log('res', '同步中...');
             await Promise.all([syncFile(CLOUD.presale, 'presale'), syncFile(CLOUD.resale, 'resale')]);
+            document.getElementById('lastSyncTime').innerText = new Date().toLocaleTimeString();
             load();
         }
 
         async function syncFile(url, type) {
             try {
-                const res = await fetch(url + "?t=" + Date.now(), { mode: 'cors' });
+                const res = await fetch(url + "?t=" + Date.now());
                 const buf = await res.arrayBuffer();
                 await process(buf, type);
-            } catch (e) { log(type==='presale'?'pre':'res', '網路連線異常'); }
+            } catch (e) { log(type==='presale'?'pre':'res', '連線失敗'); }
         }
 
         async function handleFiles(files) {
@@ -123,6 +153,7 @@
                 };
 
                 const dist = getV(['district', '鄉鎮市區']);
+                // 🚀 關鍵價格邏輯：抓取單價欄位
                 const priceUnit = parseFloat(getV(['rps22', '單價', 'amountsunit'])) || 0;
                 const dateRaw = getV(['rps07', '交易年月', 'yyymmdd']);
                 const uid = getV(['rps27', 'rps31', '編號']) || (Math.random() + '');
@@ -130,7 +161,8 @@
                 if (!dist || !dateRaw || priceUnit <= 0) return;
 
                 const date = String(dateRaw).substring(0, 5);
-                const price = (priceUnit / 0.3025) / 10000;
+                // 🚀 單位轉換：(元/平方公尺) 轉為 (萬/坪)
+                const priceInWan = (priceUnit / 0.3025) / 10000;
                 
                 const r = parseInt(getV(['rps16'])) || 0;
                 const t = parseInt(getV(['rps17'])) || 0;
@@ -138,28 +170,28 @@
                 
                 let name = "";
                 if (type === 'presale') {
-                    name = getV(['rps28', '建案名稱']) || "案件";
+                    name = getV(['rps28', '建案名稱']) || "預售案";
                 } else {
-                    const addr = getV(['rps02', '位置']) || "";
-                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 8);
+                    const addr = getV(['rps02', '位置', '土地區段']) || "";
+                    name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 12);
                 }
 
                 store.put({
-                    uid, district: dist.trim(), name: name.trim(), price, date, 
+                    uid, district: dist.trim(), name: name.trim(), price: priceInWan, date, 
                     room: r >= 4 ? "4" : String(r), 
-                    desc: `${r}/${t}/${w}`
+                    desc: `${r}房/${t}廳/${w}衛`
                 });
                 count++;
             });
-            log(type==='presale'?'pre':'res', `成功 ${count} 筆`);
+            log(type==='presale'?'pre':'res', `已載入 ${count} 筆`);
             return new Promise(r => tx.oncomplete = r);
         }
 
         async function load() {
             MEMORY.presale = await getDB('presale');
             MEMORY.resale = await getDB('resale');
-            document.getElementById('preCount').innerText = MEMORY.presale.length;
-            document.getElementById('resCount').innerText = MEMORY.resale.length;
+            document.getElementById('preCount').innerText = MEMORY.presale.length.toLocaleString();
+            document.getElementById('resCount').innerText = MEMORY.resale.length.toLocaleString();
             initUI();
         }
 
@@ -170,7 +202,7 @@
             if (!data.length) return;
             const dists = [...new Set(data.map(d => d.district))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
-            document.getElementById('fDist').innerHTML = '<option value="all">全部</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
+            document.getElementById('fDist').innerHTML = '<option value="all">📍 全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fStart').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fEnd').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
             document.getElementById('fEnd').value = dates[dates.length-1];
@@ -194,8 +226,9 @@
 
         function render(data) {
             const dates = [...new Set(data.map(d => d.date))].sort();
-            const color = MODE === 'presale' ? '#4f46e5' : '#475569';
+            const color = MODE === 'presale' ? '#4f46e5' : '#64748b';
             
+            // 🚀 重新計算每月最高價指標案 (供 Hover 使用)
             monthlyTops = {};
             dates.forEach(d => {
                 const m = data.filter(i => i.date === d);
@@ -206,22 +239,22 @@
             });
 
             updateChart('chartPrice', 'line', dates, [{
-                label: '均價', data: dates.map(d => {
+                label: '市場均價 (萬)', data: dates.map(d => {
                     const items = data.filter(i => i.date === d);
                     return (items.reduce((a, b) => a + b.price, 0) / items.length).toFixed(1);
-                }), borderColor: color, fill: true, backgroundColor: color + '10'
+                }), borderColor: color, borderWidth: 4, pointBackgroundColor: 'white', pointRadius: 5, fill: true, backgroundColor: color + '10'
             }], true);
 
             updateChart('chartVol', 'bar', dates, [{
-                label: '量', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40'
+                label: '成交量 (件)', data: dates.map(d => data.filter(i => i.date === d).length), backgroundColor: color + '40', borderRadius: 8
             }]);
 
             const dMap = {}; data.forEach(d => { if(!dMap[d.district]) dMap[d.district]={s:0,c:0}; dMap[d.district].s+=d.price; dMap[d.district].c++; });
-            showList('rankPrice', Object.entries(dMap).map(([k,v])=>({n:k, v:(v.s/v.c).toFixed(1)})).sort((a,b)=>b.v-a.v).slice(0,5), '萬');
-            showList('rankVol', Object.entries(dMap).map(([k,v])=>({n:k, v:v.c})).sort((a,b)=>b.v-a.v).slice(0,5), '件');
-            showList('rankTop', [...data].sort((a,b)=>b.price-a.price).slice(0,5).map(d=>({n:d.name, v:d.price.toFixed(1), s: d.desc})), '萬');
+            showList('rankPrice', Object.entries(dMap).map(([k,v])=>({n:k, v:(v.s/v.c).toFixed(1)})).sort((a,b)=>b.v-a.v).slice(0,5), ' 萬');
+            showList('rankVol', Object.entries(dMap).map(([k,v])=>({n:k, v:v.c})).sort((a,b)=>b.v-a.v).slice(0,5), ' 件');
+            showList('rankTop', [...data].sort((a,b)=>b.price-a.price).slice(0,8).map(d=>({n:d.name, v:d.price.toFixed(1), s: d.desc})), ' 萬');
             const hMap = {}; data.forEach(d => hMap[d.name] = (hMap[d.name]||0)+1);
-            showList('rankHot', Object.entries(hMap).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,5), '戶');
+            showList('rankHot', Object.entries(hMap).map(([k,v])=>({n:k, v})).sort((a,b)=>b.v-a.v).slice(0,8), ' 戶');
         }
 
         function updateChart(id, type, labels, datasets, tip = false) {
@@ -230,24 +263,44 @@
                 type, data: { labels, datasets },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 15,
+                            titleFont: { size: 14, weight: '900' },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                afterBody: (items) => {
+                                    const t = monthlyTops[items[0].label];
+                                    return (tip && t) ? ['', `👑 指標建案：${t.name}`, `💰 最高單價：${t.price} 萬/坪`, `🏠 配置：${t.desc}`] : [];
+                                }
+                            }
+                        }
+                    },
+                    scales: { y: { grid: { borderDash: [5, 5] }, ticks: { font: { weight: 'bold' } } }, x: { grid: { display: false } } }
                 }
             });
         }
 
         function showList(id, list, unit) {
             document.getElementById(id).innerHTML = list.map((d, i) => `
-                <div class="flex justify-between text-[10px] border-b pb-1">
-                    <span class="truncate w-20 font-bold">${i+1}. ${d.n}</span>
-                    <span class="font-black">${d.v}${unit}</span>
+                <div class="rank-item flex justify-between items-center p-3 rounded-xl">
+                    <div class="flex flex-col truncate pr-2">
+                        <span class="text-xs font-black text-slate-700">${i+1}. ${d.n}</span>
+                        ${d.s ? `<span class="text-[9px] text-slate-400 font-bold uppercase">${d.s}</span>` : ''}
+                    </div>
+                    <span class="text-sm font-black text-indigo-600 whitespace-nowrap">${d.v}<span class="text-[10px] opacity-50 ml-0.5">${unit}</span></span>
                 </div>
             `).join('');
         }
 
         function switchMode(m) { 
             MODE = m; 
-            document.getElementById('tab-presale').className = m==='presale'?'active flex-1 py-2.5 text-xs font-black rounded-lg':'flex-1 py-2.5 text-xs font-black rounded-lg';
-            document.getElementById('tab-resale').className = m==='resale'?'active flex-1 py-2.5 text-xs font-black rounded-lg':'flex-1 py-2.5 text-xs font-black rounded-lg';
+            document.getElementById('currentModeDisplay').innerText = m;
+            document.getElementById('tab-presale').className = m==='presale'?'tab-btn active flex-1 py-4 text-sm font-black rounded-xl':'tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500';
+            document.getElementById('tab-resale').className = m==='resale'?'tab-btn active flex-1 py-4 text-sm font-black rounded-xl':'tab-btn flex-1 py-4 text-sm font-black rounded-xl text-slate-500';
             initUI(); 
         }
         function log(t, m) { document.getElementById(`${t}Log`).innerText = m; }
