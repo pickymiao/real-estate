@@ -2,40 +2,40 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>ESTATE PRO v33.0 - 邏輯修正版</title>
+    <title>ESTATE PRO v34.0 - 暴力解析版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; }
         .tab-btn { transition: all 0.2s; border-bottom: 3px solid transparent; }
         .tab-btn.active { border-color: #4f46e5; color: #4f46e5; font-weight: 800; background: #f5f3ff; }
         .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        select { background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.5rem; font-size: 0.875rem; width: 100%; }
+        select { background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.4rem; font-size: 0.875rem; width: 100%; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-            <h1 class="text-2xl font-black text-slate-800 tracking-tighter">ESTATE ENGINE <span class="text-indigo-600">v33.0</span></h1>
-            <p class="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase">Logic Refined: Rooms/Halls/Baths</p>
+            <h1 class="text-2xl font-black text-slate-800">ESTATE ENGINE <span class="text-indigo-600">v34.0</span></h1>
+            <p class="text-slate-400 text-[10px] font-bold tracking-widest uppercase">Force Parsing / Room Logic Fix</p>
         </div>
         <div class="flex gap-2">
-            <button onclick="syncAll()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-indigo-700 transition-all">🔄 雲端同步 (GitHub)</button>
-            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-5 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-50">📁 手動上傳</button>
+            <button onclick="syncAll()" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-lg hover:bg-indigo-700">🔄 雲端同步 (GitHub)</button>
+            <button onclick="document.getElementById('fileIn').click()" class="bg-white text-slate-700 border border-slate-200 px-5 py-2 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-50">📁 上傳檔案</button>
             <input type="file" id="fileIn" class="hidden" multiple onchange="handleFiles(this.files)">
         </div>
     </header>
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div class="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-xl">
-            <div class="flex flex-col"><span class="text-[10px] font-black text-indigo-600 uppercase">🏠 預售屋引擎</span><div id="preLog" class="text-[10px] text-slate-400 mt-1">初始化中...</div></div>
+            <div class="flex flex-col"><span class="text-[10px] font-black text-indigo-600">🏠 預售屋引擎</span><div id="preLog" class="text-[10px] text-slate-400">等待資料...</div></div>
             <div id="preCount" class="text-xl font-black text-slate-700">0</div>
         </div>
         <div class="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-xl">
-            <div class="flex flex-col"><span class="text-[10px] font-black text-slate-500 uppercase">🏢 中古屋引擎</span><div id="resLog" class="text-[10px] text-slate-400 mt-1">初始化中...</div></div>
+            <div class="flex flex-col"><span class="text-[10px] font-black text-slate-500">🏢 中古屋引擎</span><div id="resLog" class="text-[10px] text-slate-400">等待資料...</div></div>
             <div id="resCount" class="text-xl font-black text-slate-700">0</div>
         </div>
     </div>
@@ -47,23 +47,26 @@
 
     <main class="max-w-7xl mx-auto">
         <div class="card mb-8 grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">區域</label><select id="fDist" onchange="run()"></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">房型 (rps16)</label><select id="fRoom" onchange="run()"><option value="all">全部</option><option value="1">1房</option><option value="2">2房</option><option value="3">3房</option><option value="4">4房以上</option></select></div>
-            <div id="ageBox" class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">屋齡</label><select id="fAge" onchange="run()"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select></div>
-            <div class="flex flex-col gap-1.5"><label class="text-[10px] font-black text-slate-400 uppercase">區間</label><div class="flex gap-1"><select id="fStart" onchange="run()"></select><select id="fEnd" onchange="run()"></select></div></div>
-            <button onclick="window.print()" class="w-full bg-slate-900 text-white py-2 rounded-lg text-xs font-bold">📋 導出報表</button>
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">區域</label><select id="fDist" onchange="run()"></select></div>
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">房型 (rps16)</label><select id="fRoom" onchange="run()"><option value="all">全部</option><option value="1">1房</option><option value="2">2房</option><option value="3">3房</option><option value="4">4房以上</option></select></div>
+            <div id="ageBox">
+                <label class="text-[10px] font-black text-slate-400 uppercase">屋齡</label>
+                <select id="fAge" onchange="run()"><option value="all">不限</option><option value="0-5">5年內</option><option value="5-10">5-10年</option><option value="10-20">10-20年</option><option value="20+">20年以上</option></select>
+            </div>
+            <div><label class="text-[10px] font-black text-slate-400 uppercase">區間</label><div class="flex gap-1"><select id="fStart" onchange="run()"></select><select id="fEnd" onchange="run()"></select></div></div>
+            <button onclick="window.print()" class="bg-slate-900 text-white py-2 rounded-lg text-xs font-bold">📋 導出報表</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div class="card h-[320px]"><canvas id="chartVol"></canvas></div>
-            <div class="card h-[320px] bg-gradient-to-br from-white to-indigo-50/20"><canvas id="chartPrice"></canvas></div>
+            <div class="card h-[320px]"><canvas id="chartPrice"></canvas></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">區域均價 (萬)</h4><div id="rankPrice" class="space-y-3"></div></div>
-            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">成交總量 (件)</h4><div id="rankVol" class="space-y-3"></div></div>
-            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">最高單價 (萬)</h4><div id="rankTop" class="space-y-3"></div></div>
-            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">熱門案件 (戶)</h4><div id="rankHot" class="space-y-3"></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="statsBoard">
+            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">區域均價</h4><div id="rankPrice" class="space-y-3"></div></div>
+            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">成交總量</h4><div id="rankVol" class="space-y-3"></div></div>
+            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">最高單價</h4><div id="rankTop" class="space-y-3"></div></div>
+            <div class="card p-5"><h4 class="text-[10px] font-black mb-4 text-slate-400 uppercase">熱門案件</h4><div id="rankHot" class="space-y-3"></div></div>
         </div>
     </main>
 
@@ -74,8 +77,8 @@
         };
         let db, MEMORY = { presale: [], resale: [] }, MODE = 'presale', charts = {}, monthlyTops = {};
 
-        // 升級 DB 版本到 40，強制重刷
-        const req = indexedDB.open("EstateMaster_v40", 1);
+        // 升級版本號強制重刷
+        const req = indexedDB.open("EstateMaster_v41", 1);
         req.onupgradeneeded = e => {
             let _db = e.target.result;
             _db.createObjectStore("presale", { keyPath: "uid" });
@@ -84,16 +87,17 @@
         req.onsuccess = e => { db = e.target.result; syncAll(); };
 
         async function syncAll() {
+            log('pre', '同步中...'); log('res', '同步中...');
             await Promise.all([syncFile(CLOUD.presale, 'presale'), syncFile(CLOUD.resale, 'resale')]);
             load();
         }
 
         async function syncFile(url, type) {
             try {
-                const res = await fetch(url);
+                const res = await fetch(url + "?t=" + Date.now()); // 避開快取
                 const buf = await res.arrayBuffer();
                 await process(buf, type);
-            } catch (e) { log(type==='presale'?'pre':'res', '同步失敗'); }
+            } catch (e) { log(type==='presale'?'pre':'res', '網路錯誤'); }
         }
 
         async function handleFiles(files) {
@@ -105,9 +109,11 @@
         }
 
         async function process(buffer, type) {
-            let text = new TextDecoder('big5').decode(buffer);
-            // 模糊判定：如果沒看到中文區域或英文字段，換 UTF-8
-            if (!text.includes('區') && !text.includes('district')) {
+            // 💡 解決亂碼：先嘗試 Big5，不行才轉 UTF-8
+            let text;
+            try {
+                text = new TextDecoder('big5', { fatal: true }).decode(buffer);
+            } catch(e) {
                 text = new TextDecoder('utf-8').decode(buffer);
             }
 
@@ -117,48 +123,47 @@
             let count = 0;
 
             parsed.data.forEach(row => {
-                // 模糊欄位抓取 (解決編號亂碼導致找不到標題)
-                const getV = (keys) => {
-                    const found = Object.keys(row).find(k => keys.some(key => k.toLowerCase().includes(key.toLowerCase())));
-                    return found ? row[found] : null;
+                const keys = Object.keys(row);
+                // 💡 暴力尋找邏輯：不看精準標題，看標題是否包含關鍵字
+                const findValue = (keywords) => {
+                    const key = keys.find(k => keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase())));
+                    return key ? row[key] : null;
                 };
 
-                const dist = getV(['district', '鄉鎮市區']);
-                const priceM2 = parseFloat(getV(['rps22', '單價元平方公尺'])) || 0;
-                const dateRaw = getV(['rps07', '交易年月']);
-                const uid = getV(['rps27', 'rps31', '編號']) || Math.random();
+                const dist = findValue(['district', '鄉鎮市區']);
+                const priceM2 = parseFloat(findValue(['rps22', '單價元平方公尺'])) || 0;
+                const dateRaw = findValue(['rps07', '交易年月']);
+                const uid = findValue(['rps27', 'rps31', '編號']) || Math.random();
 
                 if (!dist || !dateRaw || priceM2 <= 0) return;
 
-                const date = String(dateRaw).substring(0, 5);
+                const dateStr = String(dateRaw).substring(0, 5); // 11503
                 const price = (priceM2 / 0.3025) / 10000;
                 
-                // 房型邏輯：rps16 (房), rps17 (廳), rps18 (衛)
-                const r = parseInt(getV(['rps16'])) || 0;
-                const t = parseInt(getV(['rps17'])) || 0;
-                const w = parseInt(getV(['rps18'])) || 0;
-                const roomLabel = r >= 4 ? "4" : String(r);
-                const fullDesc = `${r}房/${t}廳/${w}衛`;
-
+                // 💡 房型解析強化
+                const r = parseInt(findValue(['rps16'])) || 0;
+                const t = parseInt(findValue(['rps17'])) || 0;
+                const w = parseInt(findValue(['rps18'])) || 0;
+                
                 let name = "";
                 if (type === 'presale') {
-                    name = getV(['rps28', '建案名稱']) || "預售案件";
+                    name = findValue(['rps28', '建案名稱']) || "預售案件";
                 } else {
-                    const addr = getV(['rps02', '土地區段位置']) || "";
+                    const addr = findValue(['rps02', '土地區段位置']) || "";
                     name = addr.replace("新北市", "").split(/[號樓室之]/)[0].trim().substring(0, 10);
                 }
 
-                const buildD = String(getV(['rps14']) || "0");
-                const age = type === 'presale' ? 0 : Math.max(0, parseInt(date.substring(0, 3)) - parseInt(buildD.substring(0, 3)));
+                const buildD = String(findValue(['rps14']) || "0");
+                const age = type === 'presale' ? 0 : Math.max(0, parseInt(dateStr.substring(0, 3)) - parseInt(buildD.substring(0, 3)));
 
                 store.put({
-                    uid, district: dist.trim(), name: name.trim(), price, date, age,
-                    room: roomLabel, // 供篩選用
-                    desc: fullDesc   // 供顯示用
+                    uid, district: dist.trim(), name: name.trim(), price, date: dateStr, age,
+                    room: r >= 4 ? "4" : String(r), 
+                    desc: `${r}房/${t}廳/${w}衛`
                 });
                 count++;
             });
-            log(type==='presale'?'pre':'res', `成功：${count} 筆`);
+            log(type==='presale'?'pre':'res', `解析成功：${count} 筆`);
             return new Promise(r => tx.oncomplete = r);
         }
 
@@ -170,11 +175,15 @@
             initUI();
         }
 
-        function getDB(s) { return new Promise(r => { const tx = db.transaction(s,"readonly"); const req = tx.objectStore(s).getAll(); req.onsuccess = () => r(req.result); }); }
+        function getDB(s) { return new Promise(r => { const req = db.transaction(s,"readonly").objectStore(s).getAll(); req.onsuccess = () => r(req.result); }); }
 
         function initUI() {
             const data = MEMORY[MODE];
-            if (!data.length) return;
+            if (!data.length) { 
+                // 💡 如果沒資料，清空 UI 防止上次殘留
+                document.getElementById('fDist').innerHTML = '<option>尚無資料</option>';
+                return; 
+            }
             const dists = [...new Set(data.map(d => d.district))].sort();
             const dates = [...new Set(data.map(d => d.date))].sort();
             document.getElementById('fDist').innerHTML = '<option value="all">全部區域</option>' + dists.map(d => `<option value="${d}">${d}</option>`).join('');
@@ -186,6 +195,7 @@
 
         function run() {
             const data = MEMORY[MODE];
+            if (!data.length) return;
             const dist = document.getElementById('fDist').value;
             const room = document.getElementById('fRoom').value;
             const age = document.getElementById('fAge').value;
@@ -194,7 +204,7 @@
 
             const filtered = data.filter(d => {
                 const mDist = dist === 'all' || d.district === dist;
-                const mRoom = room === 'all' || d.room === room; // 修正篩選對應
+                const mRoom = room === 'all' || d.room === room;
                 const mDate = d.date >= start && d.date <= end;
                 let mAge = true;
                 if (MODE === 'resale' && age !== 'all') {
@@ -255,7 +265,7 @@
             if (customTip) {
                 opt.plugins.tooltip.callbacks.afterBody = (items) => {
                     const top = monthlyTops[items[0].label];
-                    return top ? ['', `👑 指標案：${top.name}`, `💰 最高價：${top.price} 萬/坪`, `🏠 型態：${top.desc}`] : [];
+                    return top ? ['', `👑 指標案：${top.name}`, `💰 最高價：${top.price} 萬/坪`, `🏠 配置：${top.desc}`] : [];
                 };
             }
             charts[id] = new Chart(document.getElementById(id), { type, data: { labels, datasets }, options: opt });
